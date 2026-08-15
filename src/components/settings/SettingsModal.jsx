@@ -963,6 +963,19 @@ export default function SettingsModal({
                             className="w-full h-9 px-3 rounded-lg border border-slate-200 bg-white text-xs dark:bg-slate-800 dark:border-slate-700"
                           />
                         </div>
+
+                        <div>
+                          <input
+                            type="password"
+                            placeholder="Razorpay Webhook Secret (e.g. whsec_...)"
+                            value={form.razorpayWebhookSecret || ""}
+                            onChange={(e) => update("razorpayWebhookSecret", e.target.value)}
+                            className="w-full h-9 px-3 rounded-lg border border-slate-200 bg-white text-xs dark:bg-slate-800 dark:border-slate-700"
+                          />
+                          <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+                            Required to verify webhook events from Razorpay Dashboard.
+                          </p>
+                        </div>
                       </div>
 
                       {/* UPI QR section */}

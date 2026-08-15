@@ -426,6 +426,8 @@ export function SettingsProvider({ children, isAuthenticated }) {
       upiEnabled: Boolean(p.upiEnabled),
       razorpayEnabled: Boolean(p.razorpayEnabled),
       razorpayKeyId: p.razorpayKeyId || "",
+      razorpaySecretKey: p.razorpaySecretKey || "",
+      razorpayWebhookSecret: p.razorpayWebhookSecret || "",
       razorpayEmail: p.razorpayEmail || "",
       bankTransferEnabled: Boolean(p.bankTransferEnabled),
       bankName,
