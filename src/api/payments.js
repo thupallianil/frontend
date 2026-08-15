@@ -75,12 +75,23 @@ export async function verifyPayment(data) {
   return response.data?.data ?? response.data;
 }
 
-// ============================================================
-// RAZORPAY WEBHOOK (utility/mock support)
-// ============================================================
-
 export async function paymentWebhook(data) {
   const response = await api.post("payments/webhook/", data);
+  return response.data;
+}
+
+export async function confirmPayment(id) {
+  if (!id) throw new Error("Payment ID is required.");
+  const response = await api.post(`payments/${id}/confirm/`);
+  return response.data?.data ?? response.data;
+}
+
+// ============================================================
+// CLEAN PENDING CHECKOUT ATTEMPTS
+// ============================================================
+
+export async function cleanPendingPayments() {
+  const response = await api.post("payments/clean-pending/");
   return response.data;
 }
 
@@ -93,5 +104,7 @@ export default {
   createManualPayment,
   createPaymentOrder,
   verifyPayment,
+  confirmPayment,
+  cleanPendingPayments,
   paymentWebhook,
 };

@@ -589,17 +589,6 @@ export default function InvoiceDetails() {
                       <p className="text-[10px] text-slate-500 mt-1">
                         Scan with GPay, PhonePe, Paytm or any UPI app to pay ₹{Number(invoice?.balance_due || invoice?.total || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                       </p>
-                      {Number(invoice?.balance_due || 0) > 0 && (
-                        <div className="mt-3 flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => setPaymentModalOpen(true)}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 text-white text-xs font-bold shadow-sm shadow-indigo-600/20 hover:bg-indigo-700 transition"
-                          >
-                            <CreditCard size={13} /> Pay Now
-                          </button>
-                        </div>
-                      )}
                     </div>
                     <div className="shrink-0 bg-white p-2 rounded-2xl border border-indigo-200 shadow-sm">
                       <DynamicUpiQr
@@ -766,7 +755,7 @@ export default function InvoiceDetails() {
                   className="flex w-full items-center gap-3 rounded-xl bg-slate-900 px-4 py-3 text-left text-sm font-semibold text-white hover:bg-slate-800"
                 >
                   <CreditCard size={17} />
-                  Pay Now
+                  Record Payment
                 </button>
               )}
 

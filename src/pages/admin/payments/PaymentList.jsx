@@ -376,6 +376,42 @@ export default function PaymentList() {
     toast.success("Payments exported successfully");
   };
 
+  // Confirm pending payment
+  const [confirmingId, setConfirmingId] = useState(null);
+  const [cleaningPending, setCleaningPending] = useState(false);
+
+  const pendingCount = useMemo(() => {
+    return payments.filter((p) => getStatus(p) === "pending").length;
+  }, [payments]);
+
+  const handleConfirmPayment = async (payment) => {
+    const pId = getPaymentId(payment);
+    try {
+      setConfirmingId(pId);
+      const res = await paymentService.confirm(pId);
+      toast.success(res?.message || "Payment marked as SUCCESS and receipt generated!");
+      loadPayments();
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed to confirm payment");
+    } finally {
+      setConfirmingId(null);
+    }
+  };
+
+  const handleCleanPending = async () => {
+    if (!window.confirm("Clean all uncompleted / abandoned pending checkout attempts?")) return;
+    try {
+      setCleaningPending(true);
+      const res = await paymentService.cleanPending();
+      toast.success(res?.message || "Cleaned pending records successfully!");
+      loadPayments();
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed to clean pending records");
+    } finally {
+      setCleaningPending(false);
+    }
+  };
+
   // Delete payment
   const confirmDelete = async () => {
     if (!paymentToDelete) return;
@@ -548,6 +584,24 @@ export default function PaymentList() {
               <Download size={14} />
               Export CSV
             </button>
+
+            {/* CLEAN PENDING / ABANDONED ATTEMPTS */}
+            {pendingCount > 0 && (
+              <button
+                type="button"
+                disabled={cleaningPending}
+                onClick={handleCleanPending}
+                className="inline-flex h-11 items-center gap-1.5 rounded-xl border border-amber-300 bg-amber-50 px-3.5 text-xs font-bold text-amber-800 hover:bg-amber-100 transition shadow-sm"
+                title="Remove uncompleted pending checkout orders"
+              >
+                {cleaningPending ? (
+                  <Loader2 size={14} className="animate-spin text-amber-700" />
+                ) : (
+                  <Trash2 size={14} className="text-amber-700" />
+                )}
+                <span>Clean {pendingCount} Abandoned Orders</span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -681,34 +735,56 @@ export default function PaymentList() {
                       <td className="px-5 py-4 text-right">
                         <div className="flex items-center justify-end gap-1">
                           
+                          {/* CONFIRM PENDING PAYMENT */}
+                          {statusVal === "pending" && (
+                            <button
+                              type="button"
+                              disabled={confirmingId === paymentId}
+                              onClick={() => handleConfirmPayment(payment)}
+                              className="flex h-8 items-center gap-1 px-2.5 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition border border-emerald-200 text-xs font-bold shadow-sm disabled:opacity-50"
+                              title="Mark as Received & Issue Receipt"
+                            >
+                              {confirmingId === paymentId ? (
+                                <Loader2 size={13} className="animate-spin text-emerald-700" />
+                              ) : (
+                                <CheckCircle2 size={13} className="text-emerald-700" />
+                              )}
+                              <span>Approve</span>
+                            </button>
+                          )}
+
                           {/* VIEW RECEIPT DETAILS */}
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const rId = payment.receipt?.id || payment.receipt_id || paymentId;
-                              setSelectedReceiptId(rId);
-                              setReceiptModalOpen(true);
-                            }}
-                            className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 hover:bg-indigo-50 hover:text-indigo-600 transition dark:hover:bg-slate-800 dark:text-slate-400"
-                            title="View Receipt Summary"
-                          >
-                            <FileText size={15} />
-                          </button>
+                          {statusVal !== "pending" && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const rId = payment.receipt?.id || payment.receipt_id || paymentId;
+                                setSelectedReceiptId(rId);
+                                setReceiptModalOpen(true);
+                              }}
+                              className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 hover:bg-indigo-50 hover:text-indigo-600 transition dark:hover:bg-slate-800 dark:text-slate-400"
+                              title="View Receipt Summary"
+                            >
+                              <FileText size={15} />
+                            </button>
+                          )}
 
                           {/* 1-CLICK PDF DOWNLOAD */}
-                          <button
-                            type="button"
-                            disabled={downloadingReceiptId === (payment.receipt?.id || payment.receipt_id || paymentId)}
-                            onClick={() => handleDownloadReceiptPdf(payment)}
-                            className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 hover:bg-emerald-50 hover:text-emerald-600 transition dark:hover:bg-slate-800 dark:text-slate-400 disabled:opacity-50"
-                            title="Download Signed PDF Receipt Voucher"
-                          >
-                            {downloadingReceiptId === (payment.receipt?.id || payment.receipt_id || paymentId) ? (
-                              <Loader2 size={14} className="animate-spin text-emerald-600" />
-                            ) : (
-                              <Download size={15} />
-                            )}
-                          </button>
+                          {statusVal !== "pending" && (
+                            <button
+                              type="button"
+                              disabled={downloadingReceiptId === (payment.receipt?.id || payment.receipt_id || paymentId)}
+                              onClick={() => handleDownloadReceiptPdf(payment)}
+                              className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 hover:bg-emerald-50 hover:text-emerald-600 transition dark:hover:bg-slate-800 dark:text-slate-400 disabled:opacity-50"
+                              title="Download Signed PDF Receipt Voucher"
+                            >
+                              {downloadingReceiptId === (payment.receipt?.id || payment.receipt_id || paymentId) ? (
+                                <Loader2 size={14} className="animate-spin text-emerald-600" />
+                              ) : (
+                                <Download size={15} />
+                              )}
+                            </button>
+                          )}
 
                           {/* DELETE & REVERT */}
                           <button
@@ -718,7 +794,7 @@ export default function PaymentList() {
                               setDeleteModalOpen(true);
                             }}
                             className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-600 transition dark:hover:bg-red-500/10"
-                            title="Delete Payment & Reconcile Balance"
+                            title="Delete Payment Record"
                           >
                             <Trash2 size={15} />
                           </button>

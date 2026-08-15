@@ -7,6 +7,8 @@ import {
   createManualPayment,
   createPaymentOrder,
   verifyPayment,
+  confirmPayment,
+  cleanPendingPayments,
   paymentWebhook,
 } from "../api/payments.js";
 
@@ -21,6 +23,8 @@ export const paymentService = {
   manual: createManualPayment,
   createOrder: createPaymentOrder,
   verify: verifyPayment,
+  confirm: confirmPayment,
+  cleanPending: cleanPendingPayments,
   webhook: paymentWebhook,
 };
 

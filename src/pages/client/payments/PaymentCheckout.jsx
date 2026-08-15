@@ -145,14 +145,14 @@ export default function PaymentCheckout() {
     }
   };
 
-  // 2. Razorpay Online Gateway (Cards / NetBanking / Gateway UPI)
-  const payViaRazorpay = async () => {
+  // 2. Razorpay Online Gateway (All Real Methods: Cards / UPI / NetBanking / Wallets / EMI)
+  const payViaRazorpay = async (preferredMethod = null) => {
     try {
       setProcessing(true);
       setError("");
 
       const res = await loadRazorpayScript();
-      if (!res) {
+      if (!res || !window.Razorpay) {
         setError("Payment gateway SDK failed to load. Please check your internet connection.");
         setProcessing(false);
         return;
@@ -163,40 +163,93 @@ export default function PaymentCheckout() {
         amount: numAmount,
       });
 
-      const order = orderResponse?.data?.data;
+      const order = orderResponse?.data?.data || orderResponse?.data;
+      if (!order || !order.gateway_order_id) {
+        throw new Error(orderResponse?.data?.message || "Failed to create payment order.");
+      }
+
+      const activeKey = order.key_id;
+      if (!activeKey || activeKey.includes("YOUR_KEY") || activeKey.includes("placeholder")) {
+        throw new Error("Razorpay API key is not configured. Please configure it in Settings -> Payments.");
+      }
+
+      // Convert Rupee to Paise (e.g. 500.00 INR -> 50000 paise)
+      const amountInPaise = Math.round(Number(order.amount || numAmount) * 100);
+
+      const prefillData = {
+        name: invoice?.client?.name || invoice?.client_name || "",
+        email: invoice?.client?.email || "",
+        contact: invoice?.client?.phone || "",
+      };
+
+      if (preferredMethod) {
+        prefillData.method = preferredMethod;
+      }
 
       const options = {
-        key: order.key_id,
-        amount: order.amount,
+        key: activeKey,
+        amount: amountInPaise,
         currency: order.currency || "INR",
-        name: payeeName,
-        description: `Payment for Invoice ${invoice.invoice_number}`,
+        name: payeeName || "Invoice Settlement",
+        description: `Payment for Invoice ${invoice.invoice_number || invoice.id}`,
         order_id: order.gateway_order_id,
         handler: async function (response) {
           try {
+            setProcessing(true);
             const verifyResponse = await api.post("/payments/verify/", {
               payment_id: order.payment_id,
               gateway_payment_id: response.razorpay_payment_id,
               gateway_signature: response.razorpay_signature,
             });
 
-            if (verifyResponse?.data?.success) {
-              navigate(`/client/payments/success?payment_id=${order.payment_id}`);
+            if (verifyResponse?.data?.success || verifyResponse?.success) {
+              window.location.href = `/client/payments/success?payment_id=${order.payment_id}`;
             } else {
-              navigate(`/client/payments/failed?amount=${amount}&reason=VerificationFailed`);
+              window.location.href = `/client/payments/failed?amount=${numAmount}&reason=VerificationFailed`;
             }
           } catch (err) {
             console.error("Verification error:", err);
-            navigate(`/client/payments/failed?amount=${amount}&reason=ServerError`);
+            window.location.href = `/client/payments/failed?amount=${numAmount}&reason=ServerError`;
           }
         },
-        prefill: {
-          name: invoice?.client?.name || "",
-          email: invoice?.client?.email || "",
-          contact: invoice?.client?.phone || "",
-        },
+        prefill: prefillData,
         theme: {
           color: "#4f46e5",
+        },
+        config: {
+          display: {
+            blocks: {
+              upi: {
+                name: "Pay via UPI / QR Code",
+                instruments: [
+                  {
+                    method: "upi",
+                  },
+                ],
+              },
+              cards: {
+                name: "Cards & NetBanking",
+                instruments: [
+                  {
+                    method: "card",
+                  },
+                  {
+                    method: "netbanking",
+                  },
+                  {
+                    method: "wallet",
+                  },
+                  {
+                    method: "paylater",
+                  },
+                ],
+              },
+            },
+            sequence: ["block.upi", "block.cards"],
+            preferences: {
+              show_default_blocks: true,
+            },
+          },
         },
         modal: {
           ondismiss: function () {
@@ -207,14 +260,16 @@ export default function PaymentCheckout() {
 
       const paymentObject = new window.Razorpay(options);
       paymentObject.on("payment.failed", function (response) {
-        console.error(response.error);
-        setError(response.error.description);
+        console.error("Payment failed event:", response.error);
+        setError(response.error?.description || "Payment failed at gateway.");
         setProcessing(false);
       });
       paymentObject.open();
     } catch (err) {
       console.error("Payment error:", err);
-      setError(err?.response?.data?.message || "Payment gateway initialization failed.");
+      const errorMsg = err?.response?.data?.message || err?.message || "Payment gateway initialization failed.";
+      setError(errorMsg);
+      toast.error(errorMsg);
       setProcessing(false);
     }
   };
@@ -418,6 +473,17 @@ export default function PaymentCheckout() {
                   />
                 </div>
 
+                {/* 1-Click Instant Razorpay UPI Option */}
+                <div className="pt-1">
+                  <button
+                    type="button"
+                    onClick={() => payViaRazorpay("upi")}
+                    className="w-full flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-2.5 text-xs font-bold text-white hover:from-indigo-700 hover:to-violet-700 transition shadow-sm"
+                  >
+                    ⚡ Instant Pay with Razorpay UPI Apps & QR ({formatCurrency(numAmount)})
+                  </button>
+                </div>
+
                 {/* UTR Confirmation Box */}
                 <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
                   <div className="flex items-center justify-between">
@@ -460,38 +526,47 @@ export default function PaymentCheckout() {
 
             {/* TAB CONTENT: 2. DYNAMIC NETBANKING */}
             {selectedMethod === "netbanking" && (
-              <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm">
-                <DynamicNetBanking
-                  amount={numAmount}
-                  invoiceNumber={invoice.invoice_number}
-                  payeeName={payeeName}
-                  formatCurrency={formatCurrency}
-                  theme="light"
-                  onPaymentSuccess={async (data) => {
-                    try {
-                      setSubmittingUtr(true);
-                      const res = await api.post("/payments/manual/", {
-                        invoice_id: Number(invoiceId),
-                        amount: numAmount,
-                        method: "bank",
-                        transaction_id: data.transactionId,
-                        notes: data.notes,
-                      });
-                      const paymentData = res?.data?.data;
-                      const paymentId = paymentData?.id || paymentData?.payment_id;
-                      if (paymentId) {
-                        navigate(`/client/payments/success?payment_id=${paymentId}`);
-                      } else {
-                        navigate(`/client/invoices/${invoiceId}`);
+              <div className="space-y-4">
+                <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm">
+                  <DynamicNetBanking
+                    amount={numAmount}
+                    invoiceNumber={invoice.invoice_number}
+                    payeeName={payeeName}
+                    formatCurrency={formatCurrency}
+                    theme="light"
+                    onPaymentSuccess={async (data) => {
+                      try {
+                        setSubmittingUtr(true);
+                        const res = await api.post("/payments/manual/", {
+                          invoice_id: Number(invoiceId),
+                          amount: numAmount,
+                          method: "bank",
+                          transaction_id: data.transactionId,
+                          notes: data.notes,
+                        });
+                        const paymentData = res?.data?.data;
+                        const paymentId = paymentData?.id || paymentData?.payment_id;
+                        if (paymentId) {
+                          navigate(`/client/payments/success?payment_id=${paymentId}`);
+                        } else {
+                          navigate(`/client/invoices/${invoiceId}`);
+                        }
+                      } catch (err) {
+                        console.error("NetBanking settlement error:", err);
+                        toast.error("Failed to record NetBanking transaction.");
+                      } finally {
+                        setSubmittingUtr(false);
                       }
-                    } catch (err) {
-                      console.error("NetBanking settlement error:", err);
-                      toast.error("Failed to record NetBanking transaction.");
-                    } finally {
-                      setSubmittingUtr(false);
-                    }
-                  }}
-                />
+                    }}
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => payViaRazorpay("netbanking")}
+                  className="w-full flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-blue-700 transition shadow-sm"
+                >
+                  🏦 Pay via Razorpay NetBanking ({formatCurrency(numAmount)})
+                </button>
               </div>
             )}
 
@@ -504,17 +579,17 @@ export default function PaymentCheckout() {
                       <CreditCard size={20} />
                     </div>
                     <div>
-                      <p className="text-xs font-bold text-slate-900">Cards & Online Gateway</p>
-                      <p className="text-[11px] text-slate-500">Pay securely via 3D Secure Credit/Debit Card or Online Gateway</p>
+                      <p className="text-xs font-bold text-slate-900">Cards, Wallets & All Online Methods</p>
+                      <p className="text-[11px] text-slate-500">Pay securely via 3D Secure Credit/Debit Card, NetBanking, Wallets or EMI</p>
                     </div>
                   </div>
                   <button
                     type="button"
-                    onClick={payViaRazorpay}
+                    onClick={() => payViaRazorpay()}
                     disabled={numAmount <= 0}
                     className="w-full flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-3.5 text-sm font-bold text-white hover:bg-indigo-700 transition shadow-md shadow-indigo-600/20 disabled:opacity-50"
                   >
-                    <Lock size={15} /> Continue to Card & Gateway ({formatCurrency(numAmount)}) →
+                    <Lock size={15} /> Pay {formatCurrency(numAmount)} via Razorpay (All Methods) →
                   </button>
                 </div>
               </div>

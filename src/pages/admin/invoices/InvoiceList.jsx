@@ -784,8 +784,8 @@ export default function InvoiceList() {
 
                             <div className="flex items-center justify-end gap-2">
 
-                              {/* Pay or Receipt Action Button */}
-                              {currentStatus === "paid" || currentStatus === "completed" || Number(invoice.balance_due ?? -1) <= 0 ? (
+                              {/* Receipt Button if Paid */}
+                              {(invoice.status === "paid" || invoice.status === "completed" || Number(invoice.balance_due ?? -1) === 0) && (
                                 <button
                                   type="button"
                                   onClick={() => handleOpenReceipt(id)}
@@ -794,16 +794,6 @@ export default function InvoiceList() {
                                 >
                                   <Receipt size={14} />
                                   <span>Receipt</span>
-                                </button>
-                              ) : (
-                                <button
-                                  type="button"
-                                  onClick={() => handleOpenPay(invoice)}
-                                  className="flex items-center gap-1.5 rounded-lg bg-indigo-600 px-2.5 py-1.5 text-xs font-bold text-white shadow-sm transition hover:bg-indigo-700 hover:shadow"
-                                  title="Pay / Collect Payment"
-                                >
-                                  <CreditCard size={14} />
-                                  <span>Pay</span>
                                 </button>
                               )}
 
@@ -1019,8 +1009,8 @@ export default function InvoiceList() {
 
                       <div className="flex items-center gap-2">
 
-                        {/* Mobile Pay or Receipt Button */}
-                        {invoice.status === "paid" || invoice.status === "completed" || Number(invoice.balance_due ?? -1) <= 0 ? (
+                        {/* Mobile Receipt Button if Paid */}
+                        {(invoice.status === "paid" || invoice.status === "completed" || Number(invoice.balance_due ?? -1) === 0) && (
                           <button
                             type="button"
                             onClick={() => handleOpenReceipt(id)}
@@ -1028,15 +1018,6 @@ export default function InvoiceList() {
                           >
                             <Receipt size={15} />
                             <span>Receipt</span>
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => handleOpenPay(invoice)}
-                            className="flex items-center gap-1 rounded-xl bg-indigo-600 px-3 py-2 text-xs font-bold text-white hover:bg-indigo-700 shadow-sm"
-                          >
-                            <CreditCard size={15} />
-                            <span>Pay</span>
                           </button>
                         )}
 

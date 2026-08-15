@@ -1,17 +1,27 @@
+import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Building2,
   Calendar,
+  Check,
+  Copy,
   FileText,
+  KeyRound,
+  Loader2,
+  Lock,
   Mail,
   MapPin,
   Pencil,
   Phone,
+  RefreshCw,
+  ShieldCheck,
   Trash2,
   User,
   X,
 } from "lucide-react";
+import toast from "react-hot-toast";
 import useSettings from "../../hooks/useSettings";
+import { generateClientCredentials } from "../../api/clients";
 
 export default function ClientViewModal({
   open,
@@ -21,6 +31,10 @@ export default function ClientViewModal({
   onDelete,
 }) {
   const { formatCurrency } = useSettings();
+  const [resettingPassword, setResettingPassword] = useState(false);
+  const [generatedCreds, setGeneratedCreds] = useState(null);
+  const [copied, setCopied] = useState(false);
+
   if (!client) return null;
 
   const name = client.name || client.client_name || "Client Details";
@@ -41,6 +55,37 @@ export default function ClientViewModal({
   const status =
     client.status ||
     (client.is_active === false ? "Inactive" : "Active");
+
+  const hasPortalAccess = Boolean(client.has_portal_access || client.email);
+
+  const handleGenerateCredentials = async () => {
+    if (!client.email) {
+      toast.error("Client needs an email address to enable portal login.");
+      return;
+    }
+
+    try {
+      setResettingPassword(true);
+      const res = await generateClientCredentials(client.id);
+      if (res?.success && res?.data) {
+        setGeneratedCreds(res.data);
+        toast.success("New portal credentials generated!");
+      }
+    } catch (err) {
+      toast.error("Failed to generate portal credentials");
+    } finally {
+      setResettingPassword(false);
+    }
+  };
+
+  const handleCopyCredentials = (creds) => {
+    const loginUrl = `${window.location.origin}/login`;
+    const text = `Client Portal Login Details:\nPortal URL: ${loginUrl} (Select Client tab)\nEmail: ${creds.email}\nPassword: ${creds.password}`;
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    toast.success("Login credentials copied to clipboard!");
+    setTimeout(() => setCopied(false), 3000);
+  };
 
   return (
     <AnimatePresence>
@@ -140,6 +185,61 @@ export default function ClientViewModal({
                     <span>{phone}</span>
                   </div>
                 </div>
+              </div>
+
+              {/* Portal Login Credentials Section */}
+              <div className="rounded-2xl border border-indigo-100 bg-indigo-50/40 p-4 space-y-3 dark:border-indigo-900/50 dark:bg-indigo-950/20">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <KeyRound size={16} className="text-indigo-600 dark:text-indigo-400" />
+                    <span className="text-xs font-bold uppercase tracking-wider text-indigo-900 dark:text-indigo-300">
+                      Client Portal Login Access
+                    </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    disabled={resettingPassword || !client.email}
+                    onClick={handleGenerateCredentials}
+                    className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600 hover:text-indigo-800 transition disabled:opacity-50"
+                  >
+                    {resettingPassword ? (
+                      <Loader2 size={12} className="animate-spin" />
+                    ) : (
+                      <RefreshCw size={12} />
+                    )}
+                    {generatedCreds ? "Regenerate" : "Generate Login Password"}
+                  </button>
+                </div>
+
+                {generatedCreds ? (
+                  <div className="rounded-xl bg-white p-3 border border-indigo-200 text-xs space-y-2 dark:bg-slate-900 dark:border-indigo-900">
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-400">Email:</span>
+                      <strong className="text-slate-800 dark:text-slate-200">{generatedCreds.email}</strong>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-400">Password:</span>
+                      <strong className="font-mono text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 dark:bg-emerald-950/40">
+                        {generatedCreds.password}
+                      </strong>
+                    </div>
+                    <div className="pt-2 flex justify-end">
+                      <button
+                        type="button"
+                        onClick={() => handleCopyCredentials(generatedCreds)}
+                        className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-indigo-700 transition"
+                      >
+                        {copied ? <Check size={12} /> : <Copy size={12} />}
+                        {copied ? "Copied Credentials" : "Copy Login Info"}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-[11px] text-slate-500">
+                    Client can sign in at <strong>/login</strong> (Client tab) using <strong>{email}</strong>. Click &ldquo;Generate Login Password&rdquo; to create a new password and share it with the client.
+                  </p>
+                )}
               </div>
 
               {/* Billing & Tax Information */}

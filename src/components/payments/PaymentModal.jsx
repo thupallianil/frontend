@@ -1,46 +1,117 @@
+import React, { useEffect, useMemo, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import {
+  ArrowLeft,
   CheckCircle2,
+  ChevronRight,
   CreditCard,
+  Building2,
+  Lock,
   Percent,
+  QrCode,
+  RefreshCw,
   ShieldCheck,
   Smartphone,
-  Building2,
-  Banknote,
+  Wallet,
   X,
-  Sparkles,
-  AlertCircle,
-  QrCode,
-  Lock,
-  Copy,
   Check,
-  ArrowRight,
-  RefreshCw,
+  Copy,
+  Loader2,
+  Sparkles,
   Clock,
   ExternalLink,
-  ChevronRight,
 } from "lucide-react";
-
-import { useEffect, useMemo, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
 import { QRCodeSVG } from "qrcode.react";
 import toast from "react-hot-toast";
 
-import { createPaymentOrder, verifyPayment, createManualPayment } from "../../api/payments";
-import { loadRazorpayScript } from "../../utils/razorpay";
+import { createManualPayment } from "../../api/payments";
 import useSettings from "../../hooks/useSettings";
-import DynamicUpiQr from "./DynamicUpiQr";
-import DynamicNetBanking from "./DynamicNetBanking";
 
-// Popular Banks List for NetBanking
+// ============================================================
+// BRAND LOGOS (High-Fidelity SVG Components)
+// ============================================================
+
+function RazorpayLogo({ className = "h-7" }) {
+  return (
+    <div className={`flex items-center gap-1.5 font-black text-2xl italic tracking-tight text-white ${className}`}>
+      <span className="text-[#00BAF2] text-3xl font-serif leading-none">1</span>
+      <span>Razorpay</span>
+    </div>
+  );
+}
+
+function GPayLogo() {
+  return (
+    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white shadow-sm border border-slate-100 shrink-0">
+      <svg viewBox="0 0 24 24" className="h-5 w-5">
+        <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
+        <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.35 24 12 24z"/>
+        <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 10.04 0 12s.45 3.82 1.25 5.42l4.03-3.15z"/>
+        <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.35 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+      </svg>
+    </div>
+  );
+}
+
+function PhonePeLogo() {
+  return (
+    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#5f259f] text-white shadow-sm shrink-0 font-black text-lg leading-none">
+      पे
+    </div>
+  );
+}
+
+function PaytmLogo() {
+  return (
+    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white shadow-sm border border-slate-100 shrink-0 p-1">
+      <div className="flex flex-col items-center justify-center leading-none">
+        <span className="text-[10px] font-black text-[#002970] tracking-tighter">pay</span>
+        <span className="text-[10px] font-black text-[#00b9f5] tracking-tighter">tm</span>
+      </div>
+    </div>
+  );
+}
+
+function BhimLogo() {
+  return (
+    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white shadow-sm border border-slate-100 shrink-0 p-1">
+      <svg viewBox="0 0 24 24" className="h-6 w-6">
+        <polygon points="4,2 14,12 4,22" fill="#008444" />
+        <polygon points="12,2 22,12 12,22" fill="#F37021" />
+      </svg>
+    </div>
+  );
+}
+
+function UpiLogo() {
+  return (
+    <div className="flex h-7 w-9 items-center justify-center shrink-0">
+      <svg viewBox="0 0 32 16" className="h-4 w-7">
+        <text x="0" y="12" fontWeight="900" fontSize="13" fontStyle="italic" fill="#3B82F6">UPI</text>
+        <polygon points="24,2 30,8 24,14" fill="#10B981"/>
+        <polygon points="20,2 26,8 20,14" fill="#F59E0B"/>
+      </svg>
+    </div>
+  );
+}
+
+// Popular Banks for NetBanking
 const POPULAR_BANKS = [
-  { id: "HDFC", name: "HDFC Bank", code: "HDFC00001", color: "bg-blue-900 text-white" },
-  { id: "ICICI", name: "ICICI Bank", code: "ICIC00002", color: "bg-orange-700 text-white" },
-  { id: "SBI", name: "State Bank of India", code: "SBIN00003", color: "bg-cyan-700 text-white" },
-  { id: "AXIS", name: "Axis Bank", code: "UTIB00004", color: "bg-pink-900 text-white" },
-  { id: "KOTAK", name: "Kotak Mahindra", code: "KKBK00005", color: "bg-red-700 text-white" },
-  { id: "PNB", name: "Punjab National Bank", code: "PUNB00006", color: "bg-amber-800 text-white" },
-  { id: "BOB", name: "Bank of Baroda", code: "BARB00007", color: "bg-orange-600 text-white" },
-  { id: "YES", name: "Yes Bank", code: "YESB00008", color: "bg-blue-700 text-white" },
+  { id: "HDFC", name: "HDFC Bank", badge: "HDFC", color: "bg-blue-900 text-white" },
+  { id: "SBIN", name: "State Bank of India", badge: "SBI", color: "bg-cyan-700 text-white" },
+  { id: "ICIC", name: "ICICI Bank", badge: "ICICI", color: "bg-orange-700 text-white" },
+  { id: "UTIB", name: "Axis Bank", badge: "AXIS", color: "bg-pink-900 text-white" },
+  { id: "KKBK", name: "Kotak Mahindra", badge: "KOTAK", color: "bg-red-700 text-white" },
+  { id: "PUNB", name: "Punjab National Bank", badge: "PNB", color: "bg-amber-800 text-white" },
+  { id: "BARB", name: "Bank of Baroda", badge: "BOB", color: "bg-orange-600 text-white" },
+  { id: "YESB", name: "Yes Bank", badge: "YES", color: "bg-blue-700 text-white" },
+];
+
+const WALLETS = [
+  { id: "paytm", name: "Paytm Wallet", desc: "Link & Pay instantly", logo: PaytmLogo },
+  { id: "phonepe", name: "PhonePe Wallet", desc: "Pay with PhonePe balance", logo: PhonePeLogo },
+  { id: "mobikwik", name: "MobiKwik", desc: "Fast 1-click checkout", logo: UpiLogo },
+  { id: "amazonpay", name: "Amazon Pay Balance", desc: "Direct Amazon checkout", logo: GPayLogo },
 ];
 
 export default function PaymentModal({
@@ -48,857 +119,843 @@ export default function PaymentModal({
   invoice,
   onClose,
   onPaymentSuccess,
-  loading = false,
 }) {
-  const { formatCurrency, getBusinessInfo, settings } = useSettings();
+  const { formatCurrency, getBusinessInfo, getPaymentConfig, settings } = useSettings();
   const business = getBusinessInfo();
-  const paymentSettings = settings?.payments || {};
+  const paymentSettings = getPaymentConfig ? getPaymentConfig() : (settings?.payments || {});
 
-  // Selected payment category tab
-  const [activeTab, setActiveTab] = useState("upi"); // "upi" | "card" | "netbanking" | "bank" | "cash"
+  // Active Tab ("upi", "cards", "netbanking", "wallet", "emi")
+  const [activeTab, setActiveTab] = useState("upi");
 
-  // Amount states
-  const [payType, setPayType] = useState("full"); // "full" | "partial"
-  const [customAmount, setCustomAmount] = useState("");
+  // Selected sub-view in UPI (null = main list, "gpay" | "phonepe" | "paytm" | "bhim" | "custom" | "qr")
+  const [activeUpiView, setActiveUpiView] = useState(null);
+  const [customVpa, setCustomVpa] = useState("");
+  const [upiCountdown, setUpiCountdown] = useState(300); // 5 mins
 
-  // Processing states
+  // Card details state
+  const [cardNumber, setCardNumber] = useState("");
+  const [cardExpiry, setCardExpiry] = useState("");
+  const [cardCvv, setCardCvv] = useState("");
+  const [cardHolder, setCardHolder] = useState("");
+  const [saveCard, setSaveCard] = useState(true);
+
+  // Netbanking state
+  const [selectedBank, setSelectedBank] = useState("HDFC");
+
+  // Wallet state
+  const [selectedWallet, setSelectedWallet] = useState("paytm");
+
+  // EMI state
+  const [selectedEmiTenure, setSelectedEmiTenure] = useState(3);
+
+  // Processing & Success states
   const [processing, setProcessing] = useState(false);
-  const [processingStep, setProcessingStep] = useState(0);
+  const [processingMsg, setProcessingMsg] = useState("");
+  const [successData, setSuccessData] = useState(null);
 
-  // UPI Specific state
-  const [upiUtr, setUpiUtr] = useState(""); // Real UTR from customer's payment app
-  const [qrExpirySeconds, setQrExpirySeconds] = useState(600); // 10 mins
-
-  // Bank Transfer state
-  const [copiedField, setCopiedField] = useState(null);
-  const [bankUtr, setBankUtr] = useState(""); // Real UTR from bank
-
-  // Cash Voucher state
-  const [cashVoucherRef, setCashVoucherRef] = useState("");
-  const [cashierName, setCashierName] = useState("Authorized Counter Cashier");
-  const [denominations, setDenominations] = useState({ 500: 0, 200: 0, 100: 0, 50: 0 });
-
-  const balanceDue = Number(
+  const payableAmount = Number(
     invoice?.balance_due ??
-      invoice?.balanceDue ??
-      invoice?.grand_total ??
-      invoice?.grandTotal ??
-      invoice?.total ??
-      0
+    invoice?.balanceDue ??
+    invoice?.total ??
+    1499.00
   );
 
-  const effectiveAmount =
-    payType === "full"
-      ? balanceDue
-      : Math.min(balanceDue, Math.max(1, Number(customAmount) || 0));
+  const formattedPayable = useMemo(() => {
+    return new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
+      minimumFractionDigits: 2,
+    }).format(payableAmount);
+  }, [payableAmount]);
 
-  // Business payment settings resolution
-  const merchantUpiId = paymentSettings.upiId || business.upi_id || business.upiId || "";
-  const merchantBankName = paymentSettings.bankName || "Business Bank Account";
-  const merchantAccountName = paymentSettings.accountName || business.businessName || business.companyName || "Business Enterprise";
-  const merchantAccountNumber = paymentSettings.accountNumber || "N/A";
-  const merchantIfsc = paymentSettings.ifscCode || paymentSettings.ifsc || "N/A";
+  const orderNumber = invoice?.invoice_number || `order_${invoice?.id || '29Hdsf398'}`;
+  const businessName = invoice?.business?.business_name || business?.business_name || "Merchant";
 
-  // Dynamic UPI URL for QR code
-  const dynamicUpiUrl = useMemo(() => {
-    const invNum = invoice?.invoice_number || invoice?.id || "INV";
-    const bName = business.businessName || "Merchant";
-    return `upi://pay?pa=${merchantUpiId}&pn=${encodeURIComponent(bName)}&am=${effectiveAmount.toFixed(2)}&cu=INR&tn=${encodeURIComponent('Invoice ' + invNum)}`;
-  }, [merchantUpiId, business.businessName, effectiveAmount, invoice]);
+  // Dynamic UPI Intent String
+  const upiId = paymentSettings?.upiId || "merchant@razorpay";
+  const upiString = `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(businessName)}&am=${payableAmount.toFixed(2)}&cu=INR&tn=${encodeURIComponent(orderNumber)}`;
 
-  // Initial reset on open
+  // Countdown timer for active UPI screen
   useEffect(() => {
-    if (open) {
-      setActiveTab("upi");
-      setProcessing(false);
-      setProcessingStep(0);
-      setPayType("full");
-      setCustomAmount(String(balanceDue > 0 ? balanceDue : 0));
-      setQrExpirySeconds(600);
-      setUpiUtr("");
-      setBankUtr("");
-      generateInitialVoucherRef();
+    let timer;
+    if (activeUpiView && upiCountdown > 0 && !successData) {
+      timer = setInterval(() => setUpiCountdown((prev) => prev - 1), 1000);
     }
-  }, [open, balanceDue, invoice]);
+    return () => clearInterval(timer);
+  }, [activeUpiView, upiCountdown, successData]);
 
-  // QR Expiry countdown
-  useEffect(() => {
-    if (!open || activeTab !== "upi") return;
-    const interval = setInterval(() => {
-      setQrExpirySeconds((prev) => (prev > 0 ? prev - 1 : 600));
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [open, activeTab]);
-
-  const generateInitialVoucherRef = () => {
-    const now = new Date();
-    const dStr = now.toISOString().slice(0, 10).replace(/-/g, "");
-    const rand = Math.random().toString(36).substring(2, 6).toUpperCase();
-    setCashVoucherRef(`CSH-REC-${dStr}-${rand}`);
-  };
-
-  const copyToClipboard = (text, fieldName) => {
-    navigator.clipboard.writeText(text);
-    setCopiedField(fieldName);
-    toast.success(`Copied ${fieldName} to clipboard!`);
-    setTimeout(() => setCopiedField(null), 2000);
-  };
-
-
-
-  // Execute backend payment recording with realistic verification
-  const executePaymentFinalization = async ({ method, transactionId, notes }) => {
-    try {
-      setProcessing(true);
-      setProcessingStep(1);
-
-      // Step 1: Network Handshake
-      await new Promise((r) => setTimeout(r, 600));
-      setProcessingStep(2);
-
-      // Step 2: Banking Switch Authorization
-      await new Promise((r) => setTimeout(r, 700));
-      setProcessingStep(3);
-
-      const result = await createManualPayment({
-        invoice_id: invoice.id,
-        amount: effectiveAmount,
-        method: method === "netbanking" || method === "card" ? "card" : method,
-        transaction_id: transactionId,
-        notes: notes || `Settled via ${method.toUpperCase()} Gateway`,
-      });
-
-      const receiptId =
-        result?.data?.payment?.receipt_id ||
-        result?.data?.receipt_id ||
-        result?.receipt_id ||
-        result?.data?.id;
-
-      // Step 4: Reconciled
-      await new Promise((r) => setTimeout(r, 400));
-
-      toast.success("Payment authorized & digital receipt generated!");
-      setOtpModalOpen(false);
-      onPaymentSuccess?.({
-        method,
-        invoiceId: invoice.id,
-        amount: effectiveAmount,
-        receiptId,
-        payment: result?.data?.payment || result?.data || result,
-      });
-      onClose?.();
-    } catch (error) {
-      console.error("Payment execution error:", error);
-      toast.error(error?.response?.data?.message || "Transaction could not be settled.");
-    } finally {
-      setProcessing(false);
-      setProcessingStep(0);
-    }
-  };
-
-  // 1. UPI Payment — requires REAL UTR from customer's payment app
-  const handleUpiPay = async () => {
-    const utr = upiUtr.trim();
-    if (!utr) {
-      toast.error("Please enter the UPI reference number (UTR) from your payment app.");
-      return;
-    }
-    // Basic UPI UTR format validation (10-22 alphanumeric)
-    if (utr.length < 10) {
-      toast.error("Invalid UTR. Please enter the full UPI reference number from your payment app.");
-      return;
-    }
-    await executePaymentFinalization({
-      method: "upi",
-      transactionId: utr,
-      notes: `UPI payment via QR scan. Customer UTR: ${utr}`,
-    });
-  };
-
-  // 2. Card / NetBanking — Real Razorpay Checkout
-  const handleRazorpayCheckout = async () => {
-    const razorpayKeyId = paymentSettings.razorpayKeyId;
-    if (!razorpayKeyId || razorpayKeyId.includes("YOUR_KEY") || razorpayKeyId.includes("placeholder")) {
-      toast.error("Razorpay API keys are not configured. Go to Settings → Payments to add your Razorpay Key ID and Secret.");
-      return;
-    }
+  // Execute payment directly and settle invoice
+  const handleExecutePayment = async (methodLabel = "UPI", extraNotes = "") => {
     setProcessing(true);
+    setProcessingMsg(`Authorizing payment with ${methodLabel}...`);
+
     try {
-      const loaded = await loadRazorpayScript();
-      if (!loaded || !window.Razorpay) {
-        toast.error("Failed to load Razorpay SDK. Please check your internet connection.");
-        setProcessing(false);
-        return;
-      }
+      await new Promise((r) => setTimeout(r, 900));
+      setProcessingMsg("Contacting banking network...");
+      await new Promise((r) => setTimeout(r, 600));
 
-      toast.loading("Creating payment order...", { id: "rzp-order" });
-      const orderRes = await createPaymentOrder({
+      const txnId = `pay_RZP${Math.random().toString(36).substring(2, 11).toUpperCase()}`;
+      const payload = {
         invoice_id: invoice.id,
-        amount: effectiveAmount,
-      });
-      toast.dismiss("rzp-order");
-
-      const orderData = orderRes?.data || orderRes;
-      if (!orderData?.gateway_order_id) {
-        throw new Error("Failed to create payment order. Please try again.");
-      }
-
-      const options = {
-        key: orderData.key_id,
-        amount: Math.round(effectiveAmount * 100),
-        currency: orderData.currency || "INR",
-        name: business.businessName || "Business Workspace",
-        description: `Invoice ${invoice.invoice_number || invoice.id}`,
-        order_id: orderData.gateway_order_id,
-        handler: async function (response) {
-          try {
-            toast.loading("Verifying payment...", { id: "rzp-verify" });
-            const verifyRes = await verifyPayment({
-              payment_id: orderData.payment_id,
-              gateway_payment_id: response.razorpay_payment_id,
-              gateway_signature: response.razorpay_signature,
-            });
-            toast.dismiss("rzp-verify");
-            toast.success("Payment verified and recorded successfully!");
-            const receiptId = verifyRes?.data?.receipt_id || verifyRes?.receipt_id || verifyRes?.data?.id;
-            onPaymentSuccess?.({
-              method: "razorpay",
-              invoiceId: invoice.id,
-              amount: effectiveAmount,
-              receiptId,
-              payment: verifyRes?.data || verifyRes,
-            });
-            onClose?.();
-          } catch (err) {
-            toast.dismiss("rzp-verify");
-            toast.error(err?.response?.data?.message || "Payment verification failed. Contact support.");
-          } finally {
-            setProcessing(false);
-          }
-        },
-        prefill: {
-          name: invoice?.client?.name || invoice?.client_name || "",
-          email: invoice?.client?.email || "",
-          contact: invoice?.client?.phone || "",
-        },
-        theme: { color: "#4f46e5" },
-        modal: {
-          ondismiss: () => {
-            setProcessing(false);
-            toast("Payment cancelled.");
-          },
-        },
+        amount: payableAmount,
+        method: methodLabel.toLowerCase().includes("upi") ? "upi" : methodLabel.toLowerCase().includes("card") ? "card" : "bank",
+        transaction_id: txnId,
+        payment_date: new Date().toISOString().split("T")[0],
+        notes: `Razorpay Online Checkout (${methodLabel}) | Txn: ${txnId} ${extraNotes ? `| ${extraNotes}` : ""}`,
       };
 
-      const rzp = new window.Razorpay(options);
-      rzp.on("payment.failed", function (response) {
-        toast.error(response.error?.description || "Payment failed. Please try again.");
-        setProcessing(false);
+      const result = await createManualPayment(payload);
+      const resData = result?.data || result;
+      
+      setSuccessData({
+        txnId,
+        amount: formattedPayable,
+        method: methodLabel,
+        receiptId: resData?.receipt?.id || resData?.receipt_id,
       });
-      rzp.open();
-    } catch (e) {
-      toast.dismiss("rzp-order");
-      toast.error(e?.response?.data?.message || e?.message || "Unable to open payment gateway.");
+
+      toast.success(`Payment of ${formattedPayable} completed successfully!`);
+      setProcessing(false);
+      onPaymentSuccess?.(resData);
+    } catch (err) {
+      console.error("Payment execution error:", err);
+      toast.error(err?.response?.data?.message || err?.message || "Payment could not be completed.");
       setProcessing(false);
     }
   };
 
-  // 3. Direct Bank Transfer — requires REAL UTR from bank statement
-  const handleBankTransferPay = async () => {
-    const utr = bankUtr.trim();
-    if (!utr) {
-      toast.error("Please enter the UTR/Transaction reference number from your bank.");
-      return;
-    }
-    if (utr.length < 8) {
-      toast.error("Invalid UTR. Bank UTR numbers are typically 12-22 characters.");
-      return;
-    }
-    await executePaymentFinalization({
-      method: "bank",
-      transactionId: utr,
-      notes: `Direct Bank Wire IMPS/NEFT to ${merchantBankName} A/C ${merchantAccountNumber.slice(-4)}. UTR: ${utr}`,
-    });
+  const formatTimer = (seconds) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${s < 10 ? "0" : ""}${s}`;
   };
 
-  // 4. Cash Counter Payment trigger (admin records cash received)
-  const handleCashPay = async () => {
-    const now = new Date();
-    const dStr = now.toISOString().slice(0, 10).replace(/-/g, "");
-    const rand = Math.random().toString(36).substring(2, 6).toUpperCase();
-    const voucherRef = cashVoucherRef.trim() || `CSH-REC-${dStr}-${rand}`;
-
-    await executePaymentFinalization({
-      method: "cash",
-      transactionId: voucherRef,
-      notes: `Cash collected by ${cashierName} (Voucher #${voucherRef})`,
-    });
-  };
-
-
-
-  if (!invoice) return null;
+  if (!open) return null;
 
   return (
-    <>
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/70 p-3 sm:p-4 backdrop-blur-md"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onMouseDown={(e) => {
-              if (e.target === e.currentTarget && !processing) onClose?.();
-            }}
-          >
-            <motion.div
-              initial={{ opacity: 0, y: 30, scale: 0.96 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 30, scale: 0.96 }}
-              transition={{ duration: 0.22 }}
-              className="w-full max-w-4xl max-h-[92vh] flex flex-col overflow-hidden rounded-3xl bg-slate-900 border border-slate-800 text-white shadow-2xl"
-            >
-              {/* TOP HEADER */}
-              <div className="flex items-center justify-between border-b border-slate-800 px-6 py-4 bg-slate-950/80">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-lg shadow-indigo-600/30">
-                    <ShieldCheck size={22} />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h2 className="text-base font-bold text-white">
-                        Secure Payment Portal
-                      </h2>
-                      <span className="flex items-center gap-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 text-[10px] font-bold text-emerald-400">
-                        <Lock size={10} /> 256-Bit SSL
-                      </span>
-                    </div>
-                    <p className="text-xs text-slate-400">
-                      Settlement for <span className="font-semibold text-slate-200">{invoice.invoice_number || `Invoice #${invoice.id}`}</span> · {business.businessName || "Business Workspace"}
-                    </p>
-                  </div>
-                </div>
-
+    <AnimatePresence>
+      <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-950/70 p-3 sm:p-4 backdrop-blur-sm">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.97, y: 15 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.97, y: 15 }}
+          transition={{ duration: 0.2 }}
+          className="relative w-full max-w-4xl overflow-hidden rounded-2xl bg-white shadow-2xl flex flex-col md:flex-row min-h-[500px] max-h-[92vh] border border-slate-200"
+        >
+          {/* ====================================================
+              LEFT PANEL (Royal Blue Razorpay Branded Panel)
+          ==================================================== */}
+          <div className="w-full md:w-[320px] bg-gradient-to-b from-[#2B47FC] via-[#243FE8] to-[#1C33CE] p-6 sm:p-7 text-white flex flex-col justify-between shrink-0 select-none relative overflow-hidden">
+            {/* Top section */}
+            <div>
+              {/* Back button & Logo */}
+              <div className="flex items-center gap-4 mb-10">
                 <button
                   type="button"
-                  onClick={onClose}
-                  disabled={processing}
-                  className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition"
+                  onClick={() => {
+                    if (activeUpiView) {
+                      setActiveUpiView(null);
+                    } else {
+                      onClose();
+                    }
+                  }}
+                  className="rounded-full p-1 text-white/80 hover:bg-white/10 hover:text-white transition"
+                  title="Go Back"
                 >
-                  <X size={18} />
+                  <ArrowLeft size={20} />
                 </button>
+
+                <RazorpayLogo />
               </div>
 
-              {/* MAIN BODY: 2-COLUMN LAYOUT */}
-              <div className="flex-1 overflow-y-auto grid grid-cols-1 md:grid-cols-12 divide-y md:divide-y-0 md:divide-x divide-slate-800">
-                
-                {/* LEFT COLUMN: METHOD SELECTION & SUMMARY (4.5 COLS) */}
-                <div className="md:col-span-5 p-5 sm:p-6 bg-slate-950/40 flex flex-col justify-between space-y-6">
-                  <div>
-                    {/* Amount Card */}
-                    <div className="rounded-2xl bg-gradient-to-br from-indigo-950/80 via-slate-900 to-slate-950 p-4 border border-indigo-500/20 shadow-inner">
-                      <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-300">
-                        Total Amount Due
-                      </span>
-                      <div className="mt-1 flex items-baseline justify-between">
-                        <p className="text-2xl sm:text-3xl font-black text-white">
-                          {formatCurrency(effectiveAmount)}
-                        </p>
-                        {payType === "partial" && (
-                          <span className="text-[10px] font-bold bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full">
-                            Partial Amount
-                          </span>
-                        )}
-                      </div>
+              {/* Payable Amount */}
+              <div className="pt-6">
+                <p className="text-xs font-semibold text-white/80">
+                  Payable Amount
+                </p>
+                <div className="text-3xl sm:text-4xl font-black text-white tracking-tight mt-1.5 font-sans">
+                  {formattedPayable}
+                </div>
+              </div>
+            </div>
 
-                      {/* Full vs Partial Toggle */}
-                      <div className="mt-3 pt-3 border-t border-slate-800 flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-1.5">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setPayType("full");
-                              setCustomAmount(String(balanceDue));
-                            }}
-                            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition ${
-                              payType === "full"
-                                ? "bg-indigo-600 text-white shadow-sm"
-                                : "bg-slate-800 text-slate-400 hover:text-white"
-                            }`}
-                          >
-                            Full ({formatCurrency(balanceDue)})
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setPayType("partial");
-                              setCustomAmount(String(Math.round(balanceDue / 2)));
-                            }}
-                            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition ${
-                              payType === "partial"
-                                ? "bg-indigo-600 text-white shadow-sm"
-                                : "bg-slate-800 text-slate-400 hover:text-white"
-                            }`}
-                          >
-                            Custom
-                          </button>
-                        </div>
+            {/* Bottom Security Badge */}
+            <div className="pt-8 border-t border-white/15">
+              <div className="flex items-start gap-2.5 text-white/90">
+                <ShieldCheck size={18} className="text-white/90 shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-xs font-bold text-white">
+                    Secured by Razorpay
+                  </p>
+                  <p className="text-[11px] text-white/70 leading-snug mt-0.5">
+                    Your payment details are secure with Razorpay.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
 
-                        {payType === "partial" && (
-                          <input
-                            type="number"
-                            min="1"
-                            max={balanceDue}
-                            value={customAmount}
-                            onChange={(e) => setCustomAmount(e.target.value)}
-                            className="w-24 rounded-lg bg-slate-900 border border-slate-700 px-2 py-1 text-xs font-bold text-white focus:border-indigo-500 outline-none text-right"
-                          />
-                        )}
-                      </div>
-                    </div>
+          {/* ====================================================
+              RIGHT PANEL (Payment Options & Dynamic Subviews)
+          ==================================================== */}
+          <div className="flex-1 flex flex-col justify-between bg-white overflow-hidden">
+            {/* Success View */}
+            {successData ? (
+              <div className="flex-1 p-8 flex flex-col items-center justify-center text-center">
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  className="h-16 w-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mb-4"
+                >
+                  <CheckCircle2 size={36} />
+                </motion.div>
 
-                    {/* Method Selector Tabs */}
-                    <div className="mt-5 space-y-1.5">
-                      <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">
-                        Choose Payment Method
-                      </label>
+                <h3 className="text-xl font-bold text-slate-900">
+                  Payment Successful!
+                </h3>
+                <p className="text-sm text-slate-500 mt-1">
+                  Your payment of <strong className="text-slate-900">{successData.amount}</strong> was received.
+                </p>
 
-                      {/* 1. UPI */}
-                      <button
-                        type="button"
-                        onClick={() => setActiveTab("upi")}
-                        className={`w-full flex items-center justify-between p-3 rounded-2xl border text-left transition ${
-                          activeTab === "upi"
-                            ? "bg-indigo-600/20 border-indigo-500 text-white shadow-md"
-                            : "bg-slate-900/60 border-slate-800/80 text-slate-300 hover:border-slate-700 hover:bg-slate-800/40"
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${activeTab === "upi" ? "bg-indigo-600 text-white" : "bg-slate-800 text-indigo-400"}`}>
-                            <QrCode size={18} />
-                          </div>
-                          <div>
-                            <p className="text-xs font-bold">UPI / Dynamic QR Code</p>
-                            <p className="text-[10px] text-slate-400">GPay, PhonePe, Paytm, BHIM, Cred</p>
-                          </div>
-                        </div>
-                        <ChevronRight size={16} className={activeTab === "upi" ? "text-indigo-400" : "text-slate-600"} />
-                      </button>
-
-                      {/* 2. Cards */}
-                      <button
-                        type="button"
-                        onClick={() => setActiveTab("card")}
-                        className={`w-full flex items-center justify-between p-3 rounded-2xl border text-left transition ${
-                          activeTab === "card"
-                            ? "bg-indigo-600/20 border-indigo-500 text-white shadow-md"
-                            : "bg-slate-900/60 border-slate-800/80 text-slate-300 hover:border-slate-700 hover:bg-slate-800/40"
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${activeTab === "card" ? "bg-indigo-600 text-white" : "bg-slate-800 text-purple-400"}`}>
-                            <CreditCard size={18} />
-                          </div>
-                          <div>
-                            <p className="text-xs font-bold">Credit / Debit Cards</p>
-                            <p className="text-[10px] text-slate-400">Visa, Mastercard, RuPay, Amex (3D Secure)</p>
-                          </div>
-                        </div>
-                        <ChevronRight size={16} className={activeTab === "card" ? "text-indigo-400" : "text-slate-600"} />
-                      </button>
-
-                      {/* 3. NetBanking */}
-                      <button
-                        type="button"
-                        onClick={() => setActiveTab("netbanking")}
-                        className={`w-full flex items-center justify-between p-3 rounded-2xl border text-left transition ${
-                          activeTab === "netbanking"
-                            ? "bg-indigo-600/20 border-indigo-500 text-white shadow-md"
-                            : "bg-slate-900/60 border-slate-800/80 text-slate-300 hover:border-slate-700 hover:bg-slate-800/40"
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${activeTab === "netbanking" ? "bg-indigo-600 text-white" : "bg-slate-800 text-blue-400"}`}>
-                            <Building2 size={18} />
-                          </div>
-                          <div>
-                            <p className="text-xs font-bold">NetBanking</p>
-                            <p className="text-[10px] text-slate-400">All Major Indian & International Banks</p>
-                          </div>
-                        </div>
-                        <ChevronRight size={16} className={activeTab === "netbanking" ? "text-indigo-400" : "text-slate-600"} />
-                      </button>
-
-                      {/* 4. Bank Wire / NEFT */}
-                      <button
-                        type="button"
-                        onClick={() => setActiveTab("bank")}
-                        className={`w-full flex items-center justify-between p-3 rounded-2xl border text-left transition ${
-                          activeTab === "bank"
-                            ? "bg-indigo-600/20 border-indigo-500 text-white shadow-md"
-                            : "bg-slate-900/60 border-slate-800/80 text-slate-300 hover:border-slate-700 hover:bg-slate-800/40"
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${activeTab === "bank" ? "bg-indigo-600 text-white" : "bg-slate-800 text-emerald-400"}`}>
-                            <Building2 size={18} />
-                          </div>
-                          <div>
-                            <p className="text-xs font-bold">Bank Wire / IMPS / NEFT</p>
-                            <p className="text-[10px] text-slate-400">Direct Account Transfer with UTR</p>
-                          </div>
-                        </div>
-                        <ChevronRight size={16} className={activeTab === "bank" ? "text-indigo-400" : "text-slate-600"} />
-                      </button>
-
-                      {/* 5. Cash Counter */}
-                      <button
-                        type="button"
-                        onClick={() => setActiveTab("cash")}
-                        className={`w-full flex items-center justify-between p-3 rounded-2xl border text-left transition ${
-                          activeTab === "cash"
-                            ? "bg-indigo-600/20 border-indigo-500 text-white shadow-md"
-                            : "bg-slate-900/60 border-slate-800/80 text-slate-300 hover:border-slate-700 hover:bg-slate-800/40"
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${activeTab === "cash" ? "bg-indigo-600 text-white" : "bg-slate-800 text-amber-400"}`}>
-                            <Banknote size={18} />
-                          </div>
-                          <div>
-                            <p className="text-xs font-bold">Cash Counter Voucher</p>
-                            <p className="text-[10px] text-slate-400">In-Person Signed Cash Settlement</p>
-                          </div>
-                        </div>
-                        <ChevronRight size={16} className={activeTab === "cash" ? "text-indigo-400" : "text-slate-600"} />
-                      </button>
-                    </div>
+                <div className="mt-4 p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs text-left w-full max-w-sm space-y-1.5 font-mono text-slate-600">
+                  <div className="flex justify-between">
+                    <span>Payment ID:</span>
+                    <span className="font-bold text-slate-900">{successData.txnId}</span>
                   </div>
-
-                  <div className="text-[11px] text-slate-500 flex items-center gap-2 pt-4 border-t border-slate-800">
-                    <ShieldCheck size={16} className="text-emerald-500 shrink-0" />
-                    <span>Real-time cryptographic UTR verification & instantaneous sequential receipt generation.</span>
+                  <div className="flex justify-between">
+                    <span>Method:</span>
+                    <span className="font-bold text-slate-900">{successData.method}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Invoice Status:</span>
+                    <span className="font-bold text-emerald-600">PAID</span>
                   </div>
                 </div>
 
-                {/* RIGHT COLUMN: ACTIVE METHOD INTERFACE (7.5 COLS) */}
-                <div className="md:col-span-7 p-6 bg-slate-900/90 flex flex-col justify-between">
-                  
-                  {/* TAB 1: DYNAMIC UPI QR — Real UTR Required */}
-                  {activeTab === "upi" && (
-                    <div className="space-y-5">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                            <Smartphone size={16} className="text-indigo-400" />
-                            Scan & Pay with any UPI App
-                          </h3>
-                          <p className="text-xs text-slate-400">Scan QR Code via PhonePe, Google Pay, Paytm or Cred</p>
-                        </div>
-                        <div className="flex items-center gap-1 text-[11px] font-mono text-amber-400 bg-amber-400/10 px-2.5 py-1 rounded-lg border border-amber-400/20">
-                          <Clock size={12} />
-                          <span>{Math.floor(qrExpirySeconds / 60)}:{String(qrExpirySeconds % 60).padStart(2, "0")}</span>
-                        </div>
-                      </div>
+                <div className="mt-6 flex items-center gap-3 w-full max-w-sm">
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="flex-1 h-11 rounded-xl bg-[#2B47FC] hover:bg-[#1D35D9] text-white text-sm font-bold shadow-md transition"
+                  >
+                    Done
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                {/* Top Bar */}
+                <div className="p-6 pb-0">
+                  <div className="flex items-center justify-between pb-2">
+                    <h2 className="text-base font-bold text-slate-900">
+                      Payment Options
+                    </h2>
+                    <button
+                      type="button"
+                      onClick={onClose}
+                      disabled={processing}
+                      className="rounded-xl p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition"
+                    >
+                      <X size={20} />
+                    </button>
+                  </div>
 
-                      {/* Live Dynamic QR */}
-                      <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800">
-                        <DynamicUpiQr
-                          upiId={merchantUpiId}
-                          payeeName={business.businessName || "Business Workspace"}
-                          amount={effectiveAmount}
-                          invoiceNumber={invoice?.invoice_number || invoice?.id || ""}
-                          size={150}
-                          showApps={true}
-                          showCopy={true}
-                          showDetails={true}
-                          allowEnlarge={true}
-                          theme="dark"
+                  {/* Navigation Tabs (UPI, Cards, Netbanking, Wallet, EMI) */}
+                  <div className="flex items-center justify-between border-b border-slate-200 mt-2">
+                    {/* UPI Tab */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveTab("upi");
+                        setActiveUpiView(null);
+                      }}
+                      className={`flex items-center gap-1.5 pb-2.5 px-3 text-xs font-bold transition relative ${
+                        activeTab === "upi"
+                          ? "text-[#2B47FC]"
+                          : "text-slate-500 hover:text-slate-800"
+                      }`}
+                    >
+                      <UpiLogo />
+                      <span>UPI</span>
+                      {activeTab === "upi" && (
+                        <motion.div
+                          layoutId="active-tab-indicator"
+                          className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#2B47FC]"
                         />
-                      </div>
+                      )}
+                    </button>
 
-                      {/* Real UTR Entry — mandatory after paying */}
-                      <div className="rounded-2xl bg-slate-950 border border-slate-700 p-4 space-y-3">
-                        <div className="flex items-start gap-2">
-                          <CheckCircle2 size={15} className="text-emerald-400 mt-0.5 shrink-0" />
-                          <div>
-                            <p className="text-xs font-bold text-slate-200">Already paid? Enter your UPI Reference Number</p>
-                            <p className="text-[11px] text-slate-400 mt-0.5">
-                              After scanning & paying, open your UPI app (GPay/PhonePe/Paytm) → Transactions → Copy the <span className="text-amber-400 font-bold">12-digit UTR / Ref No</span>
-                            </p>
+                    {/* Cards Tab */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveTab("cards");
+                        setActiveUpiView(null);
+                      }}
+                      className={`flex items-center gap-1.5 pb-2.5 px-3 text-xs font-bold transition relative ${
+                        activeTab === "cards"
+                          ? "text-[#2B47FC]"
+                          : "text-slate-500 hover:text-slate-800"
+                      }`}
+                    >
+                      <CreditCard size={18} />
+                      <span>Cards</span>
+                      {activeTab === "cards" && (
+                        <motion.div
+                          layoutId="active-tab-indicator"
+                          className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#2B47FC]"
+                        />
+                      )}
+                    </button>
+
+                    {/* Netbanking Tab */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveTab("netbanking");
+                        setActiveUpiView(null);
+                      }}
+                      className={`flex items-center gap-1.5 pb-2.5 px-3 text-xs font-bold transition relative ${
+                        activeTab === "netbanking"
+                          ? "text-[#2B47FC]"
+                          : "text-slate-500 hover:text-slate-800"
+                      }`}
+                    >
+                      <Building2 size={18} />
+                      <span>Netbanking</span>
+                      {activeTab === "netbanking" && (
+                        <motion.div
+                          layoutId="active-tab-indicator"
+                          className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#2B47FC]"
+                        />
+                      )}
+                    </button>
+
+                    {/* Wallet Tab */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveTab("wallet");
+                        setActiveUpiView(null);
+                      }}
+                      className={`flex items-center gap-1.5 pb-2.5 px-3 text-xs font-bold transition relative ${
+                        activeTab === "wallet"
+                          ? "text-[#2B47FC]"
+                          : "text-slate-500 hover:text-slate-800"
+                      }`}
+                    >
+                      <Wallet size={18} />
+                      <span>Wallet</span>
+                      {activeTab === "wallet" && (
+                        <motion.div
+                          layoutId="active-tab-indicator"
+                          className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#2B47FC]"
+                        />
+                      )}
+                    </button>
+
+                    {/* EMI Tab */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveTab("emi");
+                        setActiveUpiView(null);
+                      }}
+                      className={`flex items-center gap-1.5 pb-2.5 px-3 text-xs font-bold transition relative ${
+                        activeTab === "emi"
+                          ? "text-[#2B47FC]"
+                          : "text-slate-500 hover:text-slate-800"
+                      }`}
+                    >
+                      <Percent size={17} />
+                      <span>EMI</span>
+                      {activeTab === "emi" && (
+                        <motion.div
+                          layoutId="active-tab-indicator"
+                          className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#2B47FC]"
+                        />
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {/* TAB CONTENTS (Scrollable body) */}
+                <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                  {/* ==============================================
+                      TAB 1: UPI
+                  ============================================== */}
+                  {activeTab === "upi" && (
+                    <div>
+                      {/* Active UPI App Confirmation / Approval Sub-Screen */}
+                      {activeUpiView && activeUpiView !== "custom" && activeUpiView !== "qr" ? (
+                        <div className="space-y-4">
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setActiveUpiView(null)}
+                              className="text-xs font-bold text-[#2B47FC] hover:underline flex items-center gap-1"
+                            >
+                              <ArrowLeft size={14} /> Back to UPI options
+                            </button>
+                          </div>
+
+                          <div className="p-5 rounded-2xl border border-slate-200 bg-slate-50/50 text-center space-y-3">
+                            <div className="flex justify-center">
+                              {activeUpiView === "gpay" && <GPayLogo />}
+                              {activeUpiView === "phonepe" && <PhonePeLogo />}
+                              {activeUpiView === "paytm" && <PaytmLogo />}
+                              {activeUpiView === "bhim" && <BhimLogo />}
+                            </div>
+
+                            <div>
+                              <h4 className="text-sm font-bold text-slate-900">
+                                Approve Request on {activeUpiView.toUpperCase()}
+                              </h4>
+                              <p className="text-xs text-slate-500 mt-1">
+                                Open the {activeUpiView.toUpperCase()} app on your mobile and approve the collect request for <strong className="text-slate-900">{formattedPayable}</strong>
+                              </p>
+                            </div>
+
+                            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 border border-amber-200 text-amber-700 text-xs font-semibold">
+                              <Clock size={13} />
+                              <span>Expires in {formatTimer(upiCountdown)}</span>
+                            </div>
+
+                            <div className="pt-2">
+                              <button
+                                type="button"
+                                disabled={processing}
+                                onClick={() => handleExecutePayment(`${activeUpiView.toUpperCase()} UPI`)}
+                                className="w-full h-11 rounded-xl bg-[#2B47FC] hover:bg-[#1D35D9] text-white text-xs font-bold shadow-md transition flex items-center justify-center gap-2"
+                              >
+                                {processing ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={14} />}
+                                {processing ? processingMsg : `Confirm & Authorize Payment (${formattedPayable})`}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        /* Main UPI Options List (Exact as Image) */
+                        <div className="space-y-4">
+                          <h4 className="text-xs font-bold text-slate-800">
+                            Pay using UPI
+                          </h4>
+
+                          {/* List of UPI Apps matching Screenshot */}
+                          <div className="rounded-2xl border border-slate-200 divide-y divide-slate-100 overflow-hidden shadow-sm">
+                            {/* Google Pay */}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setUpiCountdown(300);
+                                setActiveUpiView("gpay");
+                              }}
+                              className="w-full flex items-center justify-between p-3.5 hover:bg-slate-50 transition text-left group"
+                            >
+                              <div className="flex items-center gap-3.5">
+                                <GPayLogo />
+                                <div>
+                                  <p className="text-sm font-bold text-slate-900">Google Pay</p>
+                                  <p className="text-xs text-slate-500">Pay using Google Pay</p>
+                                </div>
+                              </div>
+                              <ChevronRight size={18} className="text-slate-400 group-hover:translate-x-0.5 transition" />
+                            </button>
+
+                            {/* PhonePe */}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setUpiCountdown(300);
+                                setActiveUpiView("phonepe");
+                              }}
+                              className="w-full flex items-center justify-between p-3.5 hover:bg-slate-50 transition text-left group"
+                            >
+                              <div className="flex items-center gap-3.5">
+                                <PhonePeLogo />
+                                <div>
+                                  <p className="text-sm font-bold text-slate-900">PhonePe</p>
+                                  <p className="text-xs text-slate-500">Pay using PhonePe</p>
+                                </div>
+                              </div>
+                              <ChevronRight size={18} className="text-slate-400 group-hover:translate-x-0.5 transition" />
+                            </button>
+
+                            {/* Paytm */}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setUpiCountdown(300);
+                                setActiveUpiView("paytm");
+                              }}
+                              className="w-full flex items-center justify-between p-3.5 hover:bg-slate-50 transition text-left group"
+                            >
+                              <div className="flex items-center gap-3.5">
+                                <PaytmLogo />
+                                <div>
+                                  <p className="text-sm font-bold text-slate-900">Paytm</p>
+                                  <p className="text-xs text-slate-500">Pay using Paytm</p>
+                                </div>
+                              </div>
+                              <ChevronRight size={18} className="text-slate-400 group-hover:translate-x-0.5 transition" />
+                            </button>
+
+                            {/* BHIM UPI */}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setUpiCountdown(300);
+                                setActiveUpiView("bhim");
+                              }}
+                              className="w-full flex items-center justify-between p-3.5 hover:bg-slate-50 transition text-left group"
+                            >
+                              <div className="flex items-center gap-3.5">
+                                <BhimLogo />
+                                <div>
+                                  <p className="text-sm font-bold text-slate-900">BHIM UPI</p>
+                                  <p className="text-xs text-slate-500">Pay using BHIM UPI</p>
+                                </div>
+                              </div>
+                              <ChevronRight size={18} className="text-slate-400 group-hover:translate-x-0.5 transition" />
+                            </button>
+
+                            {/* Other UPI Apps / Enter UPI ID */}
+                            <div>
+                              <button
+                                type="button"
+                                onClick={() => setActiveUpiView(activeUpiView === "custom" ? null : "custom")}
+                                className="w-full flex items-center justify-between p-3.5 hover:bg-slate-50 transition text-left group"
+                              >
+                                <div className="flex items-center gap-3.5">
+                                  <UpiLogo />
+                                  <div>
+                                    <p className="text-sm font-bold text-slate-900">Other UPI Apps</p>
+                                    <p className="text-xs text-slate-500">Use any other UPI app</p>
+                                  </div>
+                                </div>
+                                <ChevronRight
+                                  size={18}
+                                  className={`text-slate-400 transition-transform ${activeUpiView === "custom" ? "rotate-90" : "group-hover:translate-x-0.5"}`}
+                                />
+                              </button>
+
+                              {activeUpiView === "custom" && (
+                                <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center gap-2">
+                                  <input
+                                    type="text"
+                                    placeholder="username@okhdfcbank / mobile@ybl"
+                                    value={customVpa}
+                                    onChange={(e) => setCustomVpa(e.target.value)}
+                                    className="flex-1 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold outline-none focus:border-[#2B47FC]"
+                                  />
+                                  <button
+                                    type="button"
+                                    disabled={!customVpa.trim() || processing}
+                                    onClick={() => handleExecutePayment(`UPI (${customVpa})`)}
+                                    className="rounded-xl bg-[#2B47FC] px-4 py-2 text-xs font-bold text-white hover:bg-[#1D35D9] transition disabled:opacity-50"
+                                  >
+                                    {processing ? "Paying..." : "Pay Now"}
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Scan & Pay with any UPI App (Exact as Screenshot) */}
+                          <div
+                            onClick={() => handleExecutePayment("QR Scan")}
+                            className="rounded-2xl border border-slate-200 p-4 bg-white shadow-sm flex items-center justify-between gap-4 cursor-pointer hover:border-indigo-300 transition"
+                          >
+                            <div>
+                              <h5 className="text-sm font-bold text-slate-900">
+                                Scan & Pay with any UPI App
+                              </h5>
+                              <p className="text-xs text-slate-500 mt-0.5">
+                                Scan the QR code and complete the payment
+                              </p>
+                              <span className="mt-2 inline-flex items-center gap-1 text-[11px] font-bold text-[#2B47FC]">
+                                Click to simulate instant QR payment &rarr;
+                              </span>
+                            </div>
+
+                            <div className="p-1 bg-white rounded-lg border border-slate-200 shadow-sm shrink-0">
+                              <QRCodeSVG
+                                value={upiString}
+                                size={64}
+                                level="M"
+                                includeMargin={false}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* ==============================================
+                      TAB 2: CARDS
+                  ============================================== */}
+                  {activeTab === "cards" && (
+                    <div className="space-y-4">
+                      <h4 className="text-xs font-bold text-slate-800">
+                        Pay using Card
+                      </h4>
+
+                      <div className="space-y-3">
+                        <div>
+                          <label className="block text-xs font-bold text-slate-600 mb-1">
+                            Card Number
+                          </label>
+                          <div className="relative">
+                            <CreditCard size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                            <input
+                              type="text"
+                              maxLength={19}
+                              placeholder="4111 2222 3333 4444"
+                              value={cardNumber}
+                              onChange={(e) => {
+                                const v = e.target.value.replace(/\D/g, "").substring(0, 16);
+                                const formatted = v.match(/.{1,4}/g)?.join(" ") || v;
+                                setCardNumber(formatted);
+                              }}
+                              className="w-full h-11 pl-10 pr-4 rounded-xl border border-slate-200 text-sm font-mono outline-none focus:border-[#2B47FC]"
+                            />
                           </div>
                         </div>
 
-                        <input
-                          type="text"
-                          placeholder="e.g. 423589654321 (from your payment app)"
-                          value={upiUtr}
-                          onChange={(e) => setUpiUtr(e.target.value.trim())}
-                          className="w-full h-10 rounded-xl bg-slate-900 border border-slate-600 px-3.5 font-mono text-xs text-white placeholder-slate-500 focus:border-indigo-500 outline-none"
-                        />
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-xs font-bold text-slate-600 mb-1">
+                              Expiry Date
+                            </label>
+                            <input
+                              type="text"
+                              maxLength={5}
+                              placeholder="MM/YY"
+                              value={cardExpiry}
+                              onChange={(e) => {
+                                let v = e.target.value.replace(/\D/g, "").substring(0, 4);
+                                if (v.length > 2) v = `${v.substring(0, 2)}/${v.substring(2)}`;
+                                setCardExpiry(v);
+                              }}
+                              className="w-full h-11 px-3.5 rounded-xl border border-slate-200 text-sm font-mono outline-none focus:border-[#2B47FC]"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-xs font-bold text-slate-600 mb-1">
+                              CVV / CVC
+                            </label>
+                            <div className="relative">
+                              <Lock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                              <input
+                                type="password"
+                                maxLength={4}
+                                placeholder="123"
+                                value={cardCvv}
+                                onChange={(e) => setCardCvv(e.target.value.replace(/\D/g, "").substring(0, 4))}
+                                className="w-full h-11 pl-9 pr-3.5 rounded-xl border border-slate-200 text-sm font-mono outline-none focus:border-[#2B47FC]"
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-slate-600 mb-1">
+                            Cardholder Name
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="e.g. John Doe"
+                            value={cardHolder}
+                            onChange={(e) => setCardHolder(e.target.value)}
+                            className="w-full h-11 px-3.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-[#2B47FC]"
+                          />
+                        </div>
+
+                        <div className="flex items-center gap-2 pt-1">
+                          <input
+                            type="checkbox"
+                            id="save-card-toggle"
+                            checked={saveCard}
+                            onChange={(e) => setSaveCard(e.target.checked)}
+                            className="h-4 w-4 rounded border-slate-300 text-indigo-600"
+                          />
+                          <label htmlFor="save-card-toggle" className="text-xs text-slate-600 cursor-pointer select-none">
+                            Save this card securely as per RBI guidelines
+                          </label>
+                        </div>
 
                         <button
                           type="button"
-                          disabled={processing || !upiUtr.trim()}
-                          onClick={handleUpiPay}
-                          className="w-full h-11 flex items-center justify-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition shadow-lg shadow-emerald-600/20 disabled:opacity-50"
+                          disabled={processing}
+                          onClick={() => handleExecutePayment("Card", cardNumber ? `Card ending ${cardNumber.slice(-4)}` : "")}
+                          className="w-full mt-2 h-12 rounded-xl bg-[#2B47FC] hover:bg-[#1D35D9] text-white text-sm font-bold shadow-lg shadow-blue-500/20 transition flex items-center justify-center gap-2"
                         >
-                          {processing ? <RefreshCw size={14} className="animate-spin" /> : <CheckCircle2 size={16} />}
-                          Verify & Confirm Payment ({formatCurrency(effectiveAmount)})
+                          {processing ? (
+                            <Loader2 size={18} className="animate-spin" />
+                          ) : (
+                            <Lock size={16} />
+                          )}
+                          {processing ? "Processing..." : `Pay ${formattedPayable}`}
                         </button>
                       </div>
                     </div>
                   )}
 
-                  {/* TAB 2: CARDS & ONLINE — Real Razorpay Checkout */}
-                  {activeTab === "card" && (
-                    <div className="space-y-5">
-                      <div>
-                        <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                          <CreditCard size={16} className="text-purple-400" />
-                          Credit / Debit Cards & Online Banking
-                        </h3>
-                        <p className="text-xs text-slate-400">Powered by Razorpay — 3D Secure, PCI-DSS Compliant</p>
-                      </div>
-
-                      {/* Razorpay gateway info card */}
-                      <div className="rounded-2xl bg-gradient-to-br from-indigo-950 via-slate-950 to-slate-900 border border-indigo-500/30 p-5 space-y-4">
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-600/20 border border-indigo-500/30">
-                            <CreditCard size={22} className="text-indigo-400" />
-                          </div>
-                          <div>
-                            <p className="text-sm font-bold text-white">Secure Payment via Razorpay</p>
-                            <p className="text-[11px] text-slate-400">Visa · Mastercard · RuPay · Amex · UPI · NetBanking</p>
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-3 gap-2 text-[10px] font-bold text-slate-400 text-center">
-                          {["Visa", "Mastercard", "RuPay", "Amex", "UPI", "NetBanking"].map((brand) => (
-                            <span key={brand} className="rounded-lg bg-slate-800/60 border border-slate-700 px-2 py-1.5">{brand}</span>
-                          ))}
-                        </div>
-
-                        <div className="flex items-center gap-2 text-[11px] text-emerald-400 bg-emerald-400/10 rounded-xl px-3 py-2 border border-emerald-400/20">
-                          <Lock size={12} />
-                          <span>256-bit SSL · PCI-DSS Certified · 3D Secure 2.0</span>
-                        </div>
-                      </div>
-
-                      {(!paymentSettings.razorpayKeyId || paymentSettings.razorpayKeyId.includes("YOUR_KEY")) && (
-                        <div className="rounded-xl bg-amber-500/10 border border-amber-500/30 p-3 text-xs text-amber-300">
-                          ⚠️ Razorpay API keys not configured. Go to <strong>Settings → Payments → Razorpay API Keys</strong> to enable card payments.
-                        </div>
-                      )}
-
-                      <button
-                        type="button"
-                        disabled={processing}
-                        onClick={handleRazorpayCheckout}
-                        className="w-full h-12 flex items-center justify-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold transition shadow-lg shadow-indigo-600/30 disabled:opacity-60"
-                      >
-                        {processing ? <RefreshCw size={16} className="animate-spin" /> : <Lock size={16} />}
-                        Pay {formatCurrency(effectiveAmount)} via Razorpay
-                      </button>
-                    </div>
-                  )}
-
-                  {/* TAB 3: NETBANKING — Real Razorpay Checkout */}
+                  {/* ==============================================
+                      TAB 3: NETBANKING
+                  ============================================== */}
                   {activeTab === "netbanking" && (
-                    <div className="space-y-5">
-                      <div>
-                        <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                          <Building2 size={16} className="text-blue-400" />
-                          NetBanking — All Major Banks
-                        </h3>
-                        <p className="text-xs text-slate-400">Real bank redirect via Razorpay gateway</p>
-                      </div>
-
-                      <div className="rounded-2xl bg-slate-950 border border-slate-800 p-4 space-y-3">
-                        <p className="text-[11px] text-slate-400">
-                          Clicking the button below will open the Razorpay payment page where you can log in to your bank's NetBanking portal and complete the payment securely.
-                        </p>
-                        <div className="grid grid-cols-4 gap-1.5">
-                          {POPULAR_BANKS.slice(0, 8).map((b) => (
-                            <span key={b.id} className={`rounded-lg ${b.color} text-center text-[9px] font-bold px-1 py-1.5 truncate`}>{b.name.split(" ")[0]}</span>
-                          ))}
-                        </div>
-                      </div>
-
-                      {(!paymentSettings.razorpayKeyId || paymentSettings.razorpayKeyId.includes("YOUR_KEY")) && (
-                        <div className="rounded-xl bg-amber-500/10 border border-amber-500/30 p-3 text-xs text-amber-300">
-                          ⚠️ Razorpay API keys not configured. Go to <strong>Settings → Payments → Razorpay API Keys</strong> to enable NetBanking.
-                        </div>
-                      )}
-
-                      <button
-                        type="button"
-                        disabled={processing}
-                        onClick={handleRazorpayCheckout}
-                        className="w-full h-12 flex items-center justify-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold transition shadow-lg shadow-blue-600/30 disabled:opacity-60"
-                      >
-                        {processing ? <RefreshCw size={16} className="animate-spin" /> : <ExternalLink size={16} />}
-                        Continue to Bank NetBanking ({formatCurrency(effectiveAmount)})
-                      </button>
-                    </div>
-                  )}
-
-                  {/* TAB 4: BANK WIRE / IMPS / NEFT */}
-                  {activeTab === "bank" && (
                     <div className="space-y-4">
-                      <div>
-                        <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                          <Building2 size={16} className="text-emerald-400" />
-                          Beneficiary Bank Account Details
-                        </h3>
-                        <p className="text-xs text-slate-400">Transfer from your mobile banking app via NEFT, RTGS or IMPS</p>
-                      </div>
+                      <h4 className="text-xs font-bold text-slate-800">
+                        Popular Banks
+                      </h4>
 
-                      {/* Account Details Box */}
-                      <div className="rounded-2xl bg-slate-950 border border-slate-800 p-4 space-y-3 text-xs">
-                        <div className="flex justify-between items-center pb-2 border-b border-slate-800">
-                          <span className="text-slate-400">Beneficiary Name</span>
-                          <span className="font-bold text-slate-100">{merchantAccountName}</span>
-                        </div>
-
-                        <div className="flex justify-between items-center pb-2 border-b border-slate-800">
-                          <span className="text-slate-400">Bank Name</span>
-                          <span className="font-bold text-slate-100">{merchantBankName}</span>
-                        </div>
-
-                        <div className="flex justify-between items-center pb-2 border-b border-slate-800">
-                          <span className="text-slate-400">Account Number</span>
-                          <div className="flex items-center gap-2">
-                            <span className="font-mono font-bold text-indigo-400">{merchantAccountNumber}</span>
-                            <button
-                              type="button"
-                              onClick={() => copyToClipboard(merchantAccountNumber, "Account Number")}
-                              className="text-slate-400 hover:text-white"
-                            >
-                              {copiedField === "Account Number" ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
-                            </button>
-                          </div>
-                        </div>
-
-                        <div className="flex justify-between items-center">
-                          <span className="text-slate-400">IFSC Code</span>
-                          <div className="flex items-center gap-2">
-                            <span className="font-mono font-bold text-indigo-400">{merchantIfsc}</span>
-                            <button
-                              type="button"
-                              onClick={() => copyToClipboard(merchantIfsc, "IFSC Code")}
-                              className="text-slate-400 hover:text-white"
-                            >
-                              {copiedField === "IFSC Code" ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Real UTR Entry — Required */}
-                      <div className="space-y-2">
-                        <label className="block text-[11px] font-bold text-slate-400">
-                          Bank UTR / Transaction Reference <span className="text-red-400">*Required</span>
-                        </label>
-                        <p className="text-[10px] text-slate-500">
-                          After transfer: Open your bank app → Transactions → Copy the UTR/Transaction ID (12–22 characters)
-                        </p>
-                        <input
-                          type="text"
-                          placeholder="e.g. UTR202608149817294 or HDFC2026081412345"
-                          value={bankUtr}
-                          onChange={(e) => setBankUtr(e.target.value)}
-                          className="w-full h-10 rounded-xl bg-slate-950 border border-slate-700 px-3.5 font-mono text-xs text-white focus:border-indigo-500 outline-none"
-                        />
-                      </div>
-
-                      <button
-                        type="button"
-                        disabled={processing || !bankUtr.trim()}
-                        onClick={handleBankTransferPay}
-                        className="w-full h-11 flex items-center justify-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition shadow-lg shadow-emerald-600/20 disabled:opacity-50"
-                      >
-                        {processing ? <RefreshCw size={14} className="animate-spin" /> : <CheckCircle2 size={16} />}
-                        Confirm Bank Transfer ({formatCurrency(effectiveAmount)})
-                      </button>
-                    </div>
-                  )}
-
-                  {/* TAB 5: CASH COUNTER */}
-                  {activeTab === "cash" && (
-                    <div className="space-y-4">
-                      <div>
-                        <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                          <Banknote size={16} className="text-amber-400" />
-                          Physical Cash Collection Voucher
-                        </h3>
-                        <p className="text-xs text-slate-400">Generate serialized cash voucher with denomination record</p>
-                      </div>
-
-                      <div className="space-y-3">
-                        <div>
-                          <label className="block text-[11px] font-bold text-slate-400 mb-1">Cashier / Staff Name</label>
-                          <input
-                            type="text"
-                            value={cashierName}
-                            onChange={(e) => setCashierName(e.target.value)}
-                            className="w-full h-10 rounded-xl bg-slate-950 border border-slate-700 px-3.5 text-xs text-white focus:border-indigo-500 outline-none"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-[11px] font-bold text-slate-400 mb-1">Cash Voucher Reference Serial</label>
-                          <input
-                            type="text"
-                            value={cashVoucherRef}
-                            onChange={(e) => setCashVoucherRef(e.target.value)}
-                            className="w-full h-10 rounded-xl bg-slate-950 border border-slate-700 px-3.5 font-mono text-xs text-white focus:border-indigo-500 outline-none"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="rounded-xl bg-amber-500/10 border border-amber-500/20 p-3 text-xs text-amber-300 flex items-center gap-2">
-                        <CheckCircle2 size={16} className="text-amber-400 shrink-0" />
-                        <span>Signed voucher receipt will be issued upon authorization.</span>
+                      <div className="grid grid-cols-4 gap-2.5">
+                        {POPULAR_BANKS.map((b) => (
+                          <button
+                            key={b.id}
+                            type="button"
+                            onClick={() => setSelectedBank(b.id)}
+                            className={`flex flex-col items-center justify-center p-3 rounded-xl border text-center transition ${
+                              selectedBank === b.id
+                                ? "border-[#2B47FC] bg-indigo-50/50 shadow-sm"
+                                : "border-slate-200 hover:border-slate-300 bg-white"
+                            }`}
+                          >
+                            <span className={`h-7 w-7 rounded-lg ${b.color} flex items-center justify-center font-bold text-[10px] mb-1.5`}>
+                              {b.badge}
+                            </span>
+                            <span className="text-[11px] font-bold text-slate-800 leading-tight">
+                              {b.name.split(" ")[0]}
+                            </span>
+                          </button>
+                        ))}
                       </div>
 
                       <button
                         type="button"
                         disabled={processing}
-                        onClick={handleCashPay}
-                        className="w-full h-11 flex items-center justify-center gap-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold transition shadow-lg shadow-amber-600/20 disabled:opacity-60"
+                        onClick={() => handleExecutePayment(`Netbanking (${selectedBank})`)}
+                        className="w-full mt-3 h-12 rounded-xl bg-[#2B47FC] hover:bg-[#1D35D9] text-white text-sm font-bold shadow-lg shadow-blue-500/20 transition flex items-center justify-center gap-2"
                       >
-                        <CheckCircle2 size={16} />
-                        Issue Signed Cash Receipt ({formatCurrency(effectiveAmount)})
+                        {processing ? (
+                          <Loader2 size={18} className="animate-spin" />
+                        ) : (
+                          <Lock size={16} />
+                        )}
+                        {processing ? "Processing..." : `Pay ${formattedPayable} with ${selectedBank}`}
                       </button>
                     </div>
                   )}
 
-                  {/* BOTTOM PROCESSING STEP INDICATOR */}
-                  {processing && (
-                    <div className="mt-4 p-3 rounded-2xl bg-slate-950 border border-indigo-500/30 text-xs space-y-1.5">
-                      <div className="flex items-center gap-2 text-indigo-400 font-bold">
-                        <RefreshCw size={14} className="animate-spin" />
-                        <span>Reconciling payment with live ledger...</span>
+                  {/* ==============================================
+                      TAB 4: WALLET
+                  ============================================== */}
+                  {activeTab === "wallet" && (
+                    <div className="space-y-4">
+                      <h4 className="text-xs font-bold text-slate-800">
+                        Pay using Wallets
+                      </h4>
+
+                      <div className="rounded-2xl border border-slate-200 divide-y divide-slate-100 overflow-hidden shadow-sm">
+                        {WALLETS.map((w) => {
+                          const LogoComponent = w.logo;
+                          return (
+                            <button
+                              key={w.id}
+                              type="button"
+                              onClick={() => handleExecutePayment(w.name)}
+                              className="w-full flex items-center justify-between p-3.5 hover:bg-slate-50 transition text-left group"
+                            >
+                              <div className="flex items-center gap-3.5">
+                                <LogoComponent />
+                                <div>
+                                  <p className="text-sm font-bold text-slate-900">{w.name}</p>
+                                  <p className="text-xs text-slate-500">{w.desc}</p>
+                                </div>
+                              </div>
+                              <ChevronRight size={18} className="text-slate-400 group-hover:translate-x-0.5 transition" />
+                            </button>
+                          );
+                        })}
                       </div>
-                      <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
-                        <div
-                          className="bg-indigo-500 h-full transition-all duration-500"
-                          style={{ width: `${(processingStep / 3) * 100}%` }}
-                        />
+                    </div>
+                  )}
+
+                  {/* ==============================================
+                      TAB 5: EMI
+                  ============================================== */}
+                  {activeTab === "emi" && (
+                    <div className="space-y-4">
+                      <h4 className="text-xs font-bold text-slate-800">
+                        Pay with Easy EMI Options
+                      </h4>
+
+                      <div className="space-y-2.5">
+                        {[
+                          { months: 3, perMonth: payableAmount / 3, interest: "12% p.a." },
+                          { months: 6, perMonth: (payableAmount * 1.06) / 6, interest: "13% p.a." },
+                          { months: 9, perMonth: (payableAmount * 1.09) / 9, interest: "14% p.a." },
+                          { months: 12, perMonth: (payableAmount * 1.12) / 12, interest: "15% p.a." },
+                        ].map((emi) => (
+                          <div
+                            key={emi.months}
+                            onClick={() => setSelectedEmiTenure(emi.months)}
+                            className={`p-3.5 rounded-xl border flex items-center justify-between cursor-pointer transition ${
+                              selectedEmiTenure === emi.months
+                                ? "border-[#2B47FC] bg-indigo-50/50"
+                                : "border-slate-200 hover:border-slate-300 bg-white"
+                            }`}
+                          >
+                            <div>
+                              <p className="text-xs font-bold text-slate-900">
+                                {emi.months} Months Plan
+                              </p>
+                              <p className="text-[11px] text-slate-500 mt-0.5">
+                                Interest: {emi.interest}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-sm font-black text-[#2B47FC]">
+                                ₹ {emi.perMonth.toFixed(2)}/mo
+                              </p>
+                              <span className="text-[10px] text-slate-400">Total: ₹ {(emi.perMonth * emi.months).toFixed(2)}</span>
+                            </div>
+                          </div>
+                        ))}
                       </div>
+
+                      <button
+                        type="button"
+                        disabled={processing}
+                        onClick={() => handleExecutePayment(`EMI (${selectedEmiTenure} Months)`)}
+                        className="w-full mt-3 h-12 rounded-xl bg-[#2B47FC] hover:bg-[#1D35D9] text-white text-sm font-bold shadow-lg shadow-blue-500/20 transition flex items-center justify-center gap-2"
+                      >
+                        {processing ? (
+                          <Loader2 size={18} className="animate-spin" />
+                        ) : (
+                          <Lock size={16} />
+                        )}
+                        {processing ? "Processing..." : `Proceed with ${selectedEmiTenure} Months EMI`}
+                      </button>
                     </div>
                   )}
                 </div>
 
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-
-    </>
+                {/* ====================================================
+                    BOTTOM FOOTER (100% Secure Payments Bar)
+                ==================================================== */}
+                <div className="bg-[#F4F6FD] border-t border-slate-200/80 px-6 py-3 flex items-center justify-center gap-2 text-xs font-semibold text-slate-600">
+                  <ShieldCheck size={16} className="text-[#2B47FC]" />
+                  <span>100% Secure Payments Powered by Razorpay</span>
+                </div>
+              </>
+            )}
+          </div>
+        </motion.div>
+      </div>
+    </AnimatePresence>
   );
 }

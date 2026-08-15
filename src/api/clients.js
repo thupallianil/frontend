@@ -25,7 +25,7 @@ export async function getClient(id) {
 
 export async function createClient(data) {
   const response = await api.post("clients/", data);
-  return response.data?.data ?? response.data;
+  return response.data;
 }
 
 // ============================================================
@@ -35,7 +35,7 @@ export async function createClient(data) {
 export async function updateClient(id, data) {
   if (!id) throw new Error("Client ID is required.");
   const response = await api.patch(`clients/${id}/`, data);
-  return response.data?.data ?? response.data;
+  return response.data;
 }
 
 // ============================================================
@@ -48,10 +48,28 @@ export async function deleteClient(id) {
   return response.data;
 }
 
+// ============================================================
+// CLIENT PORTAL CREDENTIALS
+// ============================================================
+
+export async function generateClientCredentials(id, password = "") {
+  if (!id) throw new Error("Client ID is required.");
+  const response = await api.post(`clients/${id}/credentials/`, { password });
+  return response.data;
+}
+
+export async function getClientPortalStatus(id) {
+  if (!id) throw new Error("Client ID is required.");
+  const response = await api.get(`clients/${id}/credentials/`);
+  return response.data?.data ?? response.data;
+}
+
 export default {
   getClients,
   getClient,
   createClient,
   updateClient,
   deleteClient,
+  generateClientCredentials,
+  getClientPortalStatus,
 };
