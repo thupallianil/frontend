@@ -87,7 +87,7 @@ import General from "./pages/admin/settings/General";
 import Business from "./pages/admin/settings/Business";
 import Quotation from "./pages/admin/settings/Quotation";
 import Invoice from "./pages/admin/settings/Invoice";
-import Payments from "./pages/admin/settings/Payments";
+import Payments from "./pages/admin/settings/payments";
 import Tax from "./pages/admin/settings/Tax";
 import Emails from "./pages/admin/settings/Emails";
 import Pdf from "./pages/admin/settings/Pdf";
