@@ -4,10 +4,13 @@ import axios from "axios";
 // SINGLE AUTHORITATIVE AXIOS CLIENT
 // ============================================================
 
-// Normalize base URL to ensure clean path concatenation
-let rawBaseURL = import.meta.env.VITE_API_URL || "/api/";
+// Normalize base URL to ensure clean /api/ path concatenation
+let rawBaseURL = (import.meta.env.VITE_API_URL || "/api/").trim();
 if (!rawBaseURL.endsWith("/")) {
-  rawBaseURL = rawBaseURL + "/";
+  rawBaseURL += "/";
+}
+if (!rawBaseURL.endsWith("/api/")) {
+  rawBaseURL = rawBaseURL.replace(/\/+$/, "") + "/api/";
 }
 
 const api = axios.create({
