@@ -109,24 +109,27 @@ export default function PaymentCheckout() {
       return;
     }
 
+    // Require genuine UTR number from user (no fake auto-confirm)
+    if (!utrInput.trim() || utrInput.trim().length < 8) {
+      toast.error("Please enter the genuine 12-digit UPI Reference / UTR Number from your payment app after completing payment.");
+      return;
+    }
+
     try {
       setSubmittingUtr(true);
       setError("");
 
-      const dateStr = new Date().toISOString().slice(2, 10).replace(/-/g, "");
-      const timeStr = new Date().toTimeString().slice(0, 8).replace(/:/g, "");
-      const randStr = Math.random().toString(36).substring(2, 6).toUpperCase();
-      const finalUtr = utrInput.trim() || `UPI/${dateStr}/${timeStr}/${randStr}`;
+      const finalUtr = utrInput.trim().toUpperCase();
 
       const res = await api.post("/payments/manual/", {
         invoice_id: Number(invoiceId),
         amount: numAmount,
         method: "upi",
         transaction_id: finalUtr,
-        notes: `Dynamic UPI QR Payment settled via ${upiId}. UTR: ${finalUtr}`,
+        notes: `Dynamic UPI QR Payment settled via ${upiId || "UPI"}. UTR: ${finalUtr}`,
       });
 
-      const paymentData = res?.data?.data;
+      const paymentData = res?.data?.data?.payment || res?.data?.data;
       const paymentId = paymentData?.id || paymentData?.payment_id;
 
       toast.success("Payment recorded and verified successfully!");
@@ -501,14 +504,14 @@ export default function PaymentCheckout() {
                   <div className="flex gap-2">
                     <input
                       type="text"
-                      placeholder="e.g. 423589123456 or leave blank for auto"
+                      placeholder="Enter 12-digit UPI Reference / UTR Number"
                       value={utrInput}
                       onChange={(e) => setUtrInput(e.target.value)}
                       className="flex-1 rounded-xl bg-white border border-slate-200 px-3 py-2 text-xs font-mono font-bold text-slate-800 focus:border-indigo-500 outline-none"
                     />
                     <button
                       type="button"
-                      disabled={submittingUtr}
+                      disabled={submittingUtr || !utrInput.trim()}
                       onClick={handleUpiConfirmation}
                       className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-sm disabled:opacity-50"
                     >
@@ -517,7 +520,7 @@ export default function PaymentCheckout() {
                       ) : (
                         <CheckCircle2 size={13} />
                       )}
-                      Confirm Payment
+                      Submit UTR
                     </button>
                   </div>
                 </div>
