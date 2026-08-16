@@ -1001,14 +1001,15 @@ export default function QuoteList() {
                                   disabled={
                                     isActionLoading
                                   }
-                                  onClick={() =>
+                                  onClick={(e) => {
+                                    e.stopPropagation();
                                     setOpenMenu(
                                       openMenu ===
                                         quoteId
                                         ? null
                                         : quoteId
-                                    )
-                                  }
+                                    );
+                                  }}
                                   className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50"
                                 >
                                   {isActionLoading ? (
@@ -1026,58 +1027,71 @@ export default function QuoteList() {
 
                                 {openMenu ===
                                   quoteId && (
-                                    <ActionMenu
-                                      quote={quote}
-                                      status={
-                                        currentStatus
-                                      }
-                                      onPreview={() => {
-                                        setPreviewQuote(quote);
-                                        setOpenMenu(null);
-                                      }}
-                                      onPdf={() => {
-                                        handleDownloadPdf(quote);
-                                        setOpenMenu(null);
-                                      }}
-                                      onView={() => {
-                                        handleView(
-                                          quoteId
-                                        );
-                                        setOpenMenu(
-                                          null
-                                        );
-                                      }}
-                                      onEdit={() => {
-                                        handleEdit(
-                                          quoteId
-                                        );
-                                        setOpenMenu(
-                                          null
-                                        );
-                                      }}
-                                      onDelete={() => {
-                                        handleDelete(quoteId);
-                                        setOpenMenu(null);
-                                      }}
-                                      onApprove={() =>
-                                        handleApprove(
-                                          quoteId
-                                        )
-                                      }
-                                      onReject={() =>
-                                        handleReject(
-                                          quoteId
-                                        )
-                                      }
-                                      onConvert={() =>
-                                        handleConvertToInvoice(
-                                          quoteId
-                                        )
-                                      }
-                                      onSyncInvoice={(id) =>
-                                        handleSyncInvoice(id)
-                                      }
-                                    />
+                                    <>
+                                      <div
+                                        className="fixed inset-0 z-20"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setOpenMenu(null);
+                                        }}
+                                      />
+                                      <ActionMenu
+                                        quote={quote}
+                                        status={
+                                          currentStatus
+                                        }
+                                        onPreview={() => {
+                                          setPreviewQuote(quote);
+                                          setOpenMenu(null);
+                                        }}
+                                        onPdf={() => {
+                                          handleDownloadPdf(quote);
+                                          setOpenMenu(null);
+                                        }}
+                                        onView={() => {
+                                          handleView(
+                                            quoteId
+                                          );
+                                          setOpenMenu(
+                                            null
+                                          );
+                                        }}
+                                        onEdit={() => {
+                                          handleEdit(
+                                            quoteId
+                                          );
+                                          setOpenMenu(
+                                            null
+                                          );
+                                        }}
+                                        onDelete={() => {
+                                          handleDelete(quoteId);
+                                          setOpenMenu(null);
+                                        }}
+                                        onApprove={() => {
+                                          handleApprove(
+                                            quoteId
+                                          );
+                                          setOpenMenu(null);
+                                        }}
+                                        onReject={() => {
+                                          handleReject(
+                                            quoteId
+                                          );
+                                          setOpenMenu(null);
+                                        }}
+                                        onConvert={() => {
+                                          handleConvertToInvoice(
+                                            quoteId
+                                          );
+                                          setOpenMenu(null);
+                                        }}
+                                        onSyncInvoice={(id) => {
+                                          handleSyncInvoice(id);
+                                          setOpenMenu(null);
+                                        }}
+                                      />
+                                    </>
                                   )}
 
                               </div>

@@ -843,14 +843,10 @@ export default function InvoiceList() {
                                 <button
                                   type="button"
                                   disabled={busy}
-                                  onClick={() =>
-                                    setOpenMenu(
-                                      openMenu ===
-                                        id
-                                        ? null
-                                        : id
-                                    )
-                                  }
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setOpenMenu(openMenu === id ? null : id);
+                                  }}
                                   className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
                                 >
                                   {busy ? (
@@ -866,8 +862,15 @@ export default function InvoiceList() {
                                 </button>
 
 
-                                {openMenu ===
-                                  id && (
+                                {openMenu === id && (
+                                  <>
+                                    <div
+                                      className="fixed inset-0 z-20"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setOpenMenu(null);
+                                      }}
+                                    />
                                     <InvoiceActionMenu
                                       onPay={() => {
                                         handleOpenPay(invoice);
@@ -881,32 +884,26 @@ export default function InvoiceList() {
                                         setPreviewInvoice(invoice);
                                         setOpenMenu(null);
                                       }}
-                                      onView={() =>
-                                        handleView(
-                                          id
-                                        )
-                                      }
-                                      onEdit={() =>
-                                        handleEdit(
-                                          id
-                                        )
-                                      }
-                                      onPdf={() =>
-                                        handleDownloadPdf(
-                                          invoice
-                                        )
-                                      }
-                                      onDelete={() =>
-                                        handleDelete(
-                                          id
-                                        )
-                                      }
-                                      status={
-                                        currentStatus
-                                      }
+                                      onView={() => {
+                                        handleView(id);
+                                        setOpenMenu(null);
+                                      }}
+                                      onEdit={() => {
+                                        handleEdit(id);
+                                        setOpenMenu(null);
+                                      }}
+                                      onPdf={() => {
+                                        handleDownloadPdf(invoice);
+                                        setOpenMenu(null);
+                                      }}
+                                      onDelete={() => {
+                                        handleDelete(id);
+                                        setOpenMenu(null);
+                                      }}
+                                      status={currentStatus}
                                     />
-                                  )}
-
+                                  </>
+                                )}
                               </div>
 
                             </div>
