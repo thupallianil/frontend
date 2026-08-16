@@ -23,7 +23,7 @@ export default function DynamicUpiQr({
   amount = 0,
   invoiceNumber = "",
   transactionRef = "",
-  size = 160,
+  size = 200,
   showApps = true,
   showCopy = true,
   showDetails = true,
@@ -192,15 +192,15 @@ export default function DynamicUpiQr({
             </span>
           </div>
 
-          {/* REAL SCANNABLE QR CODE */}
-          <div className="relative flex items-center justify-center p-1 bg-white rounded-xl min-h-[140px]">
+          {/* REAL SCANNABLE QR CODE - High Definition & High Error Correction */}
+          <div className="relative flex items-center justify-center p-2 bg-white rounded-2xl min-h-[160px]">
             {upiUri ? (
               <QRCodeSVG
                 value={upiUri}
                 size={size}
-                level="M"
-                includeMargin={false}
-                className="rounded-lg"
+                level="H"
+                includeMargin={true}
+                className="rounded-xl shadow-inner border border-slate-100"
               />
             ) : (
               <div className="p-4 text-center max-w-[180px]">

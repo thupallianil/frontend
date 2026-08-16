@@ -519,9 +519,10 @@ export default function PaymentModal({
                               <div className="p-3.5 rounded-2xl bg-white border-2 border-indigo-500 shadow-md">
                                 <QRCodeSVG
                                   value={upiString}
-                                  size={180}
-                                  level="M"
-                                  includeMargin={false}
+                                  size={210}
+                                  level="H"
+                                  includeMargin={true}
+                                  className="rounded-xl"
                                 />
                               </div>
                               <p className="text-xs font-bold text-slate-800 mt-3">{businessName}</p>
