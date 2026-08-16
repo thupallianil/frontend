@@ -24,7 +24,7 @@ import {
 import { QRCodeSVG } from "qrcode.react";
 import toast from "react-hot-toast";
 
-import { createManualPayment } from "../../api/payments";
+import { launchRazorpayCheckout } from "../../utils/razorpay";
 import useSettings from "../../hooks/useSettings";
 
 // ============================================================
@@ -184,43 +184,49 @@ export default function PaymentModal({
     return () => clearInterval(timer);
   }, [activeUpiView, upiCountdown, successData]);
 
-  // Execute payment directly and settle invoice
+  // Execute real payment via Razorpay SDK and verify with backend
   const handleExecutePayment = async (methodLabel = "UPI", extraNotes = "") => {
     setProcessing(true);
-    setProcessingMsg(`Authorizing payment with ${methodLabel}...`);
+    setProcessingMsg("Connecting to Razorpay Secure Gateway...");
 
     try {
-      await new Promise((r) => setTimeout(r, 900));
-      setProcessingMsg("Contacting banking network...");
-      await new Promise((r) => setTimeout(r, 600));
+      let prefMethod = null;
+      const lower = methodLabel.toLowerCase();
+      if (lower.includes("upi") || lower.includes("gpay") || lower.includes("phonepe") || lower.includes("paytm") || lower.includes("bhim")) {
+        prefMethod = "upi";
+      } else if (lower.includes("card")) {
+        prefMethod = "card";
+      } else if (lower.includes("netbank") || lower.includes("bank")) {
+        prefMethod = "netbanking";
+      } else if (lower.includes("wallet")) {
+        prefMethod = "wallet";
+      }
 
-      const txnId = `pay_RZP${Math.random().toString(36).substring(2, 11).toUpperCase()}`;
-      const payload = {
-        invoice_id: invoice.id,
+      await launchRazorpayCheckout({
+        invoice,
         amount: payableAmount,
-        method: methodLabel.toLowerCase().includes("upi") ? "upi" : methodLabel.toLowerCase().includes("card") ? "card" : "bank",
-        transaction_id: txnId,
-        payment_date: new Date().toISOString().split("T")[0],
-        notes: `Razorpay Online Checkout (${methodLabel}) | Txn: ${txnId} ${extraNotes ? `| ${extraNotes}` : ""}`,
-      };
-
-      const result = await createManualPayment(payload);
-      const resData = result?.data || result;
-      
-      setSuccessData({
-        txnId,
-        amount: formattedPayable,
-        method: methodLabel,
-        receiptId: resData?.receipt?.id || resData?.receipt_id,
+        preferredMethod: prefMethod,
+        onSuccess: (data) => {
+          setProcessing(false);
+          const txnId = data?.data?.gateway_payment_id || data?.gateway_payment_id || data?.payment_id || "PAY_RZP_SUCCESS";
+          setSuccessData({
+            txnId,
+            amount: formattedPayable,
+            method: methodLabel,
+            receiptId: data?.data?.receipt?.id || data?.receipt?.id,
+          });
+          toast.success(`Payment of ${formattedPayable} verified and completed!`);
+          onPaymentSuccess?.(data);
+        },
+        onError: (err) => {
+          setProcessing(false);
+          console.error("Razorpay error:", err);
+        },
       });
-
-      toast.success(`Payment of ${formattedPayable} completed successfully!`);
       setProcessing(false);
-      onPaymentSuccess?.(resData);
     } catch (err) {
-      console.error("Payment execution error:", err);
-      toast.error(err?.response?.data?.message || err?.message || "Payment could not be completed.");
       setProcessing(false);
+      console.error("Payment execution error:", err);
     }
   };
 
@@ -487,7 +493,52 @@ export default function PaymentModal({
                   {activeTab === "upi" && (
                     <div>
                       {/* Active UPI App Confirmation / Approval Sub-Screen */}
-                      {activeUpiView && activeUpiView !== "custom" && activeUpiView !== "qr" ? (
+                      {activeUpiView === "qr" ? (
+                        <div className="space-y-4">
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setActiveUpiView(null)}
+                              className="text-xs font-bold text-[#2B47FC] hover:underline flex items-center gap-1"
+                            >
+                              <ArrowLeft size={14} /> Back to UPI options
+                            </button>
+                          </div>
+
+                          <div className="p-6 rounded-2xl border border-slate-200 bg-white text-center space-y-4 shadow-sm">
+                            <div className="flex flex-col items-center justify-center">
+                              <div className="p-3.5 rounded-2xl bg-white border-2 border-indigo-500 shadow-md">
+                                <QRCodeSVG
+                                  value={upiString}
+                                  size={180}
+                                  level="M"
+                                  includeMargin={false}
+                                />
+                              </div>
+                              <p className="text-xs font-bold text-slate-800 mt-3">{businessName}</p>
+                              <span className="text-xs font-mono font-semibold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-md mt-1">
+                                {upiId}
+                              </span>
+                              <p className="text-sm font-black text-slate-900 mt-2">
+                                Amount: {formattedPayable}
+                              </p>
+                              <p className="text-[11px] text-slate-400 mt-1">
+                                Scan with any UPI app (GPay, PhonePe, Paytm, BHIM, CRED)
+                              </p>
+                            </div>
+
+                            <button
+                              type="button"
+                              disabled={processing}
+                              onClick={() => handleExecutePayment("UPI QR")}
+                              className="w-full h-11 rounded-xl bg-[#2B47FC] hover:bg-[#1D35D9] text-white text-xs font-bold shadow-md transition flex items-center justify-center gap-2"
+                            >
+                              {processing ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={14} />}
+                              <span>Pay via Official Razorpay Gateway ({formattedPayable})</span>
+                            </button>
+                          </div>
+                        </div>
+                      ) : activeUpiView && activeUpiView !== "custom" ? (
                         <div className="space-y-4">
                           <div className="flex items-center gap-2">
                             <button
@@ -509,16 +560,11 @@ export default function PaymentModal({
 
                             <div>
                               <h4 className="text-sm font-bold text-slate-900">
-                                Approve Request on {activeUpiView.toUpperCase()}
+                                Pay with {activeUpiView.toUpperCase()}
                               </h4>
                               <p className="text-xs text-slate-500 mt-1">
-                                Open the {activeUpiView.toUpperCase()} app on your mobile and approve the collect request for <strong className="text-slate-900">{formattedPayable}</strong>
+                                Open the official Razorpay checkout to pay <strong className="text-slate-900">{formattedPayable}</strong> using {activeUpiView.toUpperCase()} or QR
                               </p>
-                            </div>
-
-                            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 border border-amber-200 text-amber-700 text-xs font-semibold">
-                              <Clock size={13} />
-                              <span>Expires in {formatTimer(upiCountdown)}</span>
                             </div>
 
                             <div className="pt-2">
@@ -529,7 +575,7 @@ export default function PaymentModal({
                                 className="w-full h-11 rounded-xl bg-[#2B47FC] hover:bg-[#1D35D9] text-white text-xs font-bold shadow-md transition flex items-center justify-center gap-2"
                               >
                                 {processing ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={14} />}
-                                {processing ? processingMsg : `Confirm & Authorize Payment (${formattedPayable})`}
+                                {processing ? processingMsg : `Pay ${formattedPayable} via Razorpay`}
                               </button>
                             </div>
                           </div>
@@ -661,9 +707,9 @@ export default function PaymentModal({
                             </div>
                           </div>
 
-                          {/* Scan & Pay with any UPI App (Exact as Screenshot) */}
+                          {/* Scan & Pay with any UPI App */}
                           <div
-                            onClick={() => handleExecutePayment("QR Scan")}
+                            onClick={() => setActiveUpiView("qr")}
                             className="rounded-2xl border border-slate-200 p-4 bg-white shadow-sm flex items-center justify-between gap-4 cursor-pointer hover:border-indigo-300 transition"
                           >
                             <div>
@@ -671,10 +717,10 @@ export default function PaymentModal({
                                 Scan & Pay with any UPI App
                               </h5>
                               <p className="text-xs text-slate-500 mt-0.5">
-                                Scan the QR code and complete the payment
+                                Scan the dynamic QR code with Google Pay, PhonePe or Paytm
                               </p>
                               <span className="mt-2 inline-flex items-center gap-1 text-[11px] font-bold text-[#2B47FC]">
-                                Click to simulate instant QR payment &rarr;
+                                Click to view full scannable QR &rarr;
                               </span>
                             </div>
 
