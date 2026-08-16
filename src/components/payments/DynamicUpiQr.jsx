@@ -54,23 +54,24 @@ export default function DynamicUpiQr({
   const numAmount = Math.max(0, Number(amount) || 0);
   const cleanUpiId = (
     propUpiId ||
-    paymentDetails.upiId ||
-    businessInfo.upi_id ||
-    businessInfo.upiId ||
-    "merchant@upi"
+    paymentDetails?.upiId ||
+    businessInfo?.upi_id ||
+    businessInfo?.upiId ||
+    ""
   ).trim();
   const cleanPayee = (
     propPayeeName ||
-    paymentDetails.accountName ||
-    businessInfo.businessName ||
-    businessInfo.companyName ||
-    "Enterprise Payee"
+    paymentDetails?.accountName ||
+    businessInfo?.businessName ||
+    businessInfo?.companyName ||
+    "Business Merchant"
   ).trim();
   const note = invoiceNumber ? `Invoice ${invoiceNumber}` : "Payment";
   const ref = transactionRef || (invoiceNumber ? invoiceNumber.replace(/[^a-zA-Z0-9]/g, "") : "");
 
-  // Generate NPCI UPI standard string
+  // Generate NPCI UPI standard string only if valid UPI ID is present
   const upiUri = useMemo(() => {
+    if (!cleanUpiId) return "";
     const params = new URLSearchParams();
     params.set("pa", cleanUpiId);
     params.set("pn", cleanPayee);
@@ -192,14 +193,22 @@ export default function DynamicUpiQr({
           </div>
 
           {/* REAL SCANNABLE QR CODE */}
-          <div className="relative flex items-center justify-center p-1 bg-white rounded-xl">
-            <QRCodeSVG
-              value={upiUri}
-              size={size}
-              level="M"
-              includeMargin={false}
-              className="rounded-lg"
-            />
+          <div className="relative flex items-center justify-center p-1 bg-white rounded-xl min-h-[140px]">
+            {upiUri ? (
+              <QRCodeSVG
+                value={upiUri}
+                size={size}
+                level="M"
+                includeMargin={false}
+                className="rounded-lg"
+              />
+            ) : (
+              <div className="p-4 text-center max-w-[180px]">
+                <QrCodeIcon className="mx-auto h-10 w-10 text-slate-300 mb-1" />
+                <p className="text-[11px] font-bold text-slate-600">UPI ID Not Set</p>
+                <p className="text-[9px] text-slate-400 mt-0.5">Add UPI ID in Settings → Payments to generate QR</p>
+              </div>
+            )}
           </div>
 
           {/* Quick Enlarge Overlay on Hover */}

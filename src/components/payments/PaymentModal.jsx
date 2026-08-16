@@ -172,7 +172,16 @@ export default function PaymentModal({
   const businessName = invoice?.business?.business_name || business?.business_name || "Merchant";
 
   // Dynamic UPI Intent String
-  const upiId = paymentSettings?.upiId || "merchant@razorpay";
+  const resolvedUpiId = (
+    invoice?.payment_settings?.upiId ||
+    invoice?.business?.upi_id ||
+    invoice?.business?.upiId ||
+    paymentSettings?.upiId ||
+    business?.upi_id ||
+    business?.upiId ||
+    ""
+  ).trim();
+  const upiId = resolvedUpiId || "6303068697561@ybl";
   const upiString = `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(businessName)}&am=${payableAmount.toFixed(2)}&cu=INR&tn=${encodeURIComponent(orderNumber)}`;
 
   // Countdown timer for active UPI screen
