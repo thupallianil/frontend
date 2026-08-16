@@ -117,19 +117,7 @@ export default function AdminTicketList() {
   return (
     <div className="min-h-full bg-slate-50/50 dark:bg-slate-950 p-4 sm:p-6 lg:p-8 space-y-6">
       {/* Top Banner Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
-            <LifeBuoy size={15} />
-            Customer Support Center
-          </div>
-          <h1 className="text-2xl font-black text-slate-900 dark:text-slate-100 tracking-tight mt-0.5">
-            Support Tickets & Inquiries
-          </h1>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            Manage incoming client inquiries, review technical blockers, and post authorized resolutions.
-          </p>
-        </div>
+      <div className="flex items-center justify-end gap-4">
 
         <button
           type="button"

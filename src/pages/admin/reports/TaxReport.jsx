@@ -111,20 +111,7 @@ export default function TaxReport() {
 
             <div className="border-b border-slate-200 bg-white p-6">
 
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-
-                    <div>
-
-                        <h1 className="text-2xl font-bold text-slate-900">
-                            Tax Report
-                        </h1>
-
-                        <p className="mt-1 text-sm text-slate-500">
-                            Review collected tax dynamically.
-                        </p>
-
-                    </div>
-
+                <div className="flex items-center justify-end gap-2">
                     <div className="flex gap-2">
 
                         <select

@@ -445,22 +445,7 @@ export default function PaymentList() {
       {/* =================================================
           HEADER & ACTIONS
       ================================================= */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-black tracking-tight text-slate-900 dark:text-slate-100">
-              Payments & Settlements
-            </h1>
-            <span className="rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-bold text-indigo-700 border border-indigo-100 dark:bg-indigo-950 dark:text-indigo-300 dark:border-indigo-800">
-              {filteredPayments.length} Records
-            </span>
-          </div>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            Real-time multi-channel settlement tracking (UPI, Cards, Bank Wire, Cash Counter Vouchers).
-          </p>
-        </div>
-
-        <div className="flex items-center gap-3">
+      <div className="flex items-center justify-end gap-3">
           <button
             type="button"
             onClick={loadPayments}
@@ -480,7 +465,6 @@ export default function PaymentList() {
             Record Payment
           </button>
         </div>
-      </div>
 
       {/* =================================================
           REAL-TIME STATS CARDS (5 METRICS)
