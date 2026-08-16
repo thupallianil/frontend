@@ -430,26 +430,6 @@ function SettingsSideFlyoutItem({
       }}
       className="z-[99999] w-[270px] rounded-3xl bg-white/95 p-3.5 shadow-2xl border border-slate-200/80 backdrop-blur-xl dark:bg-slate-900/95 dark:border-slate-800 animate-in fade-in zoom-in-95 duration-150"
     >
-      {/* Popover Header */}
-      <div className="flex items-center justify-between border-b border-slate-100 pb-2.5 mb-2.5 dark:border-slate-800">
-        <div className="flex items-center gap-2">
-          <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400">
-            <Settings size={13} />
-          </div>
-          <div>
-            <p className="text-xs font-bold text-slate-900 dark:text-white leading-none">
-              Settings
-            </p>
-            <p className="text-[10px] text-slate-400 mt-0.5">
-              Click icon to open popup
-            </p>
-          </div>
-        </div>
-        <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-[9px] font-bold text-slate-500 dark:text-slate-400">
-          11 Sections
-        </span>
-      </div>
-
       {/* Floating 4-Column Icons Grid */}
       <div className="grid grid-cols-4 gap-2">
         {SETTINGS_SECTIONS.map((sec) => {
