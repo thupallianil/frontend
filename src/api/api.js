@@ -15,11 +15,13 @@ if (!rawBaseURL.endsWith("/api/")) {
 
 const api = axios.create({
   baseURL: rawBaseURL,
+  timeout: 30000,
   headers: {
     "Content-Type": "application/json",
     Accept: "application/json",
   },
 });
+
 
 // ============================================================
 // PUBLIC ENDPOINTS (never send expired Bearer to break public calls)
