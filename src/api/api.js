@@ -4,8 +4,24 @@ import axios from "axios";
 // SINGLE AUTHORITATIVE AXIOS CLIENT
 // ============================================================
 
-// Normalize base URL to ensure clean /api/ path concatenation
-let rawBaseURL = (import.meta.env.VITE_API_URL || "/api/").trim();
+// Smart Base URL Resolution (detects production / Vercel deployment vs local dev)
+let rawBaseURL = (import.meta.env.VITE_API_URL || "").trim();
+
+const isProductionDomain =
+  typeof window !== "undefined" &&
+  window.location.hostname !== "localhost" &&
+  window.location.hostname !== "127.0.0.1";
+
+// When deployed to Vercel/Production, automatically use the live Render backend if localhost is given
+if (
+  (isProductionDomain || import.meta.env.PROD) &&
+  (!rawBaseURL || rawBaseURL.includes("localhost") || rawBaseURL.includes("127.0.0.1"))
+) {
+  rawBaseURL = "https://backend1-cu3z.onrender.com/api/";
+} else if (!rawBaseURL) {
+  rawBaseURL = "http://127.0.0.1:8000/api/";
+}
+
 if (!rawBaseURL.endsWith("/")) {
   rawBaseURL += "/";
 }
@@ -21,6 +37,7 @@ const api = axios.create({
     Accept: "application/json",
   },
 });
+
 
 
 // ============================================================
