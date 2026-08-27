@@ -177,9 +177,49 @@ export async function resetPassword(data) {
   return response.data;
 }
 
+// ============================================================
+// GOOGLE AUTH
+// ============================================================
+
+export async function loginWithGoogle(credential, role = "client") {
+  const response = await api.post("auth/google/", {
+    credential,
+    role,
+  });
+
+  const access =
+    response.data?.access ||
+    response.data?.data?.tokens?.access ||
+    response.data?.data?.access;
+
+  const refresh =
+    response.data?.refresh ||
+    response.data?.data?.tokens?.refresh ||
+    response.data?.data?.refresh;
+
+  const user = response.data?.data?.user || response.data?.user;
+
+  if (access) localStorage.setItem("access_token", access);
+  if (refresh) localStorage.setItem("refresh_token", refresh);
+  if (user) {
+    localStorage.setItem("user", JSON.stringify(user));
+    localStorage.setItem("auth_user", JSON.stringify(user));
+  }
+
+  window.dispatchEvent(new Event("auth-changed"));
+
+  return {
+    ...response.data,
+    access,
+    refresh,
+    user,
+  };
+}
+
 export default {
   login,
   register,
+  loginWithGoogle,
   getCurrentUser,
   refreshToken,
   logout,

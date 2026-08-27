@@ -28,10 +28,12 @@ const api = axios.create({
 const PUBLIC_ENDPOINTS = [
   "auth/login/",
   "auth/register/",
+  "auth/google/",
   "auth/forgot-password/",
   "auth/reset-password/",
   "auth/refresh/",
 ];
+
 
 const isPublicEndpoint = (url = "") => {
   const cleanUrl = url.replace(/^\/?(api\/)?/, "");
