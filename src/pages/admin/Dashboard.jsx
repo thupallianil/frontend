@@ -6,6 +6,8 @@ import {
   CreditCard,
   FileText,
   IndianRupee,
+  Layers,
+  LayoutDashboard,
   Users,
 } from "lucide-react";
 
@@ -21,6 +23,7 @@ import PaymentChart from "../../components/reports/PaymentChart";
 import RecentInvoices from "../../components/dashboard/RecentInvoices";
 import RecentPayments from "../../components/dashboard/RecentPayments";
 import RecentClients from "../../components/dashboard/RecentClients";
+import WorkDashboardPanels from "../../components/dashboard/WorkDashboardPanels";
 
 import dashboardService from "../../services/dashboardService";
 import useSettings from "../../hooks/useSettings";
@@ -46,10 +49,19 @@ const EMPTY_DATA = {
 export default function Dashboard() {
   const [data, setData] = useState(EMPTY_DATA);
   const [loading, setLoading] = useState(true);
+  const [dashboardView, setDashboardView] = useState(() => {
+    return localStorage.getItem("invoiceflow_dashboard_view") || "work_panels";
+  });
+
+  const handleViewChange = (view) => {
+    setDashboardView(view);
+    localStorage.setItem("invoiceflow_dashboard_view", view);
+  };
 
   useEffect(() => {
     loadDashboard();
   }, []);
+
 
 
   const loadDashboard = async () => {
@@ -264,16 +276,47 @@ export default function Dashboard() {
       className="space-y-6"
     >
       {/* =====================================================
-          HEADER
+          HEADER WITH WORKSPACE VIEW SWITCHER
       ===================================================== */}
 
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-end">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        {/* View mode switcher */}
+        <div className="flex items-center gap-1 rounded-2xl border border-slate-200/80 bg-white p-1 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          <button
+            type="button"
+            onClick={() => handleViewChange("work_panels")}
+            className={`flex items-center gap-2 rounded-xl px-3.5 py-1.5 text-xs font-bold transition-all ${
+              dashboardView === "work_panels"
+                ? "bg-slate-950 text-white shadow-md shadow-slate-950/20 dark:bg-blue-600 dark:shadow-blue-600/20"
+                : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+            }`}
+          >
+            <Layers size={14} className={dashboardView === "work_panels" ? "text-blue-400 dark:text-white" : "text-slate-400"} />
+            <span>Dynamic Work Panels</span>
+            <span className="rounded-full bg-blue-500/20 px-1.5 py-0.2 text-[9px] font-black text-blue-600 dark:text-blue-200">
+              Interactive
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleViewChange("classic_charts")}
+            className={`flex items-center gap-2 rounded-xl px-3.5 py-1.5 text-xs font-bold transition-all ${
+              dashboardView === "classic_charts"
+                ? "bg-slate-950 text-white shadow-md shadow-slate-950/20 dark:bg-blue-600 dark:shadow-blue-600/20"
+                : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+            }`}
+          >
+            <LayoutDashboard size={14} className={dashboardView === "classic_charts" ? "text-blue-400 dark:text-white" : "text-slate-400"} />
+            <span>Classic Overview</span>
+          </button>
+        </div>
 
         <div className="flex gap-2">
 
           <Link
             to="/admin/invoices/add"
-            className="flex h-10 items-center gap-2 rounded-xl bg-slate-950 px-4 text-xs font-bold text-white transition hover:bg-slate-800"
+            className="flex h-10 items-center gap-2 rounded-xl bg-slate-950 px-4 text-xs font-bold text-white transition hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-700 shadow-sm"
           >
             <FileText size={15} />
 
@@ -283,7 +326,7 @@ export default function Dashboard() {
 
           <Link
             to="/admin/clients/add"
-            className="hidden h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-xs font-bold text-slate-700 transition hover:bg-slate-50 sm:flex"
+            className="hidden h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-xs font-bold text-slate-700 transition hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 sm:flex"
           >
             <Users size={15} />
 
@@ -294,12 +337,15 @@ export default function Dashboard() {
 
       </div>
 
+      {dashboardView === "work_panels" ? (
+        <WorkDashboardPanels data={data} onRefresh={loadDashboard} />
+      ) : (
+        <>
+          {/* =====================================================
+              MAIN STATS
+          ===================================================== */}
 
-      {/* =====================================================
-          MAIN STATS
-      ===================================================== */}
-
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
 
         <ReportCard
           title="Total revenue"
@@ -495,6 +541,8 @@ export default function Dashboard() {
         </div>
 
       </div>
+      </>
+      )}
 
     </motion.div>
   );

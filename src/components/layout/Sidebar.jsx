@@ -1,5 +1,6 @@
 import {
   BarChart3,
+  Building2,
   FileText,
   LayoutDashboard,
   LifeBuoy,
@@ -43,6 +44,11 @@ const ADMIN_ITEMS = [
     label: "Clients",
     path: "/admin/clients",
     icon: Users,
+  },
+  {
+    label: "Vendors",
+    path: "/admin/vendors",
+    icon: Building2,
   },
   {
     label: "Quotes",
@@ -170,9 +176,9 @@ export default function Sidebar({
           {!sidebarCollapsed && (
             <div>
               {settings?.business?.logoUrl ? (
-                <img 
-                  src={settings.business.logoUrl} 
-                  alt={settings.business.businessName || "Business Logo"} 
+                <img
+                  src={settings.business.logoUrl}
+                  alt={settings.business.businessName || "Business Logo"}
                   className="h-8 w-auto object-contain"
                 />
               ) : (
@@ -241,7 +247,6 @@ export default function Sidebar({
                 key={item.path}
                 item={item}
                 sidebarCollapsed={sidebarCollapsed}
-                setSidebarCollapsed={setSidebarCollapsed}
               />
             );
           })}
@@ -317,26 +322,18 @@ export default function Sidebar({
   );
 }
 
-/* -------------------------------------------------------------------------- */
-/*  Standard Sidebar Link                                                     */
-/* -------------------------------------------------------------------------- */
-function SidebarLink({ item, sidebarCollapsed, setSidebarCollapsed }) {
+function SidebarLink({ item, sidebarCollapsed }) {
   const Icon = item.icon;
 
   return (
     <NavLink
       to={item.path}
-      onClick={() => {
-        if (sidebarCollapsed && setSidebarCollapsed) {
-          setSidebarCollapsed(false);
-        }
-      }}
+      title={sidebarCollapsed ? item.label : undefined}
       className={({ isActive }) => `
         group flex items-center ${sidebarCollapsed ? 'justify-center px-0' : 'gap-3 px-3'} rounded-xl py-2.5 text-sm font-medium transition
-        ${
-          isActive
-            ? "bg-slate-950 text-white shadow-sm dark:bg-white dark:text-slate-950 font-semibold"
-            : "text-slate-600 hover:bg-slate-50 hover:text-slate-950 dark:text-slate-400 dark:hover:bg-slate-900 dark:hover:text-slate-100"
+        ${isActive
+          ? "bg-slate-950 text-white shadow-sm dark:bg-white dark:text-slate-950 font-semibold"
+          : "text-slate-600 hover:bg-slate-50 hover:text-slate-950 dark:text-slate-400 dark:hover:bg-slate-900 dark:hover:text-slate-100"
         }
       `}
     >
@@ -344,11 +341,10 @@ function SidebarLink({ item, sidebarCollapsed, setSidebarCollapsed }) {
         <>
           <Icon
             size={18}
-            className={`shrink-0 ${
-              isActive
-                ? "text-white dark:text-slate-950"
-                : "text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-300"
-            }`}
+            className={`shrink-0 ${isActive
+              ? "text-white dark:text-slate-950"
+              : "text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-300"
+              }`}
           />
           {!sidebarCollapsed && (
             <span className="whitespace-nowrap truncate">{item.label}</span>
@@ -381,10 +377,10 @@ function SettingsSideFlyoutItem({
     if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
     if (btnRef.current) {
       const rect = btnRef.current.getBoundingClientRect();
-      const popupHeight = 240;
-      const topPos = Math.max(16, Math.min(rect.top - 60, window.innerHeight - popupHeight - 20));
+      const popupHeight = 420;
+      const topPos = Math.max(16, Math.min(rect.top - 120, window.innerHeight - popupHeight - 20));
       setPos({
-        left: rect.right + 10,
+        left: rect.right + 12,
         top: topPos,
       });
       setIsOpen(true);
@@ -409,50 +405,83 @@ function SettingsSideFlyoutItem({
 
   const handleClickItem = (category) => {
     setIsOpen(false);
-    navigate("/admin/settings");
+    navigate(`/admin/settings?tab=${category}`);
     onOpenCategory(category);
   };
 
   const handleMainClick = (e) => {
     e.preventDefault();
-    navigate("/admin/settings");
+    navigate("/admin/settings?tab=general");
     onOpenCategory("general");
   };
 
   const floatingFlyout = isOpen && typeof document !== "undefined" && createPortal(
-    <div
-      onMouseEnter={handleFlyoutMouseEnter}
-      onMouseLeave={handleFlyoutMouseLeave}
-      style={{
-        position: "fixed",
-        left: `${pos.left}px`,
-        top: `${pos.top}px`,
-      }}
-      className="z-[99999] w-[270px] rounded-3xl bg-white/95 p-3.5 shadow-2xl border border-slate-200/80 backdrop-blur-xl dark:bg-slate-900/95 dark:border-slate-800 animate-in fade-in zoom-in-95 duration-150"
-    >
-      {/* Floating 4-Column Icons Grid */}
-      <div className="grid grid-cols-4 gap-2">
-        {SETTINGS_SECTIONS.map((sec) => {
-          const SecIcon = sec.icon;
-          return (
-            <button
-              key={sec.category}
-              type="button"
-              onClick={() => handleClickItem(sec.category)}
-              title={sec.title}
-              className="group/btn relative flex flex-col items-center justify-center p-2 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/70 hover:bg-indigo-50/80 dark:bg-slate-800/40 dark:hover:bg-indigo-500/20 transition-all hover:scale-105 hover:shadow-sm"
-            >
-              <div className={`flex h-8 w-8 items-center justify-center rounded-xl ${sec.color} shadow-xs group-hover/btn:rotate-6 transition`}>
-                <SecIcon size={15} />
-              </div>
-              <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300 truncate w-full text-center mt-1">
-                {sec.shortTitle}
-              </span>
-            </button>
-          );
-        })}
+    <>
+      {/* Invisible backdrop to catch outside clicks */}
+      <div
+        className="fixed inset-0 z-[99998]"
+        onClick={() => setIsOpen(false)}
+      />
+
+      <div
+        onMouseEnter={handleFlyoutMouseEnter}
+        onMouseLeave={handleFlyoutMouseLeave}
+        style={{
+          position: "fixed",
+          left: `${pos.left}px`,
+          top: `${pos.top}px`,
+        }}
+        className="z-[99999] w-[460px] max-w-[calc(100vw-120px)] rounded-3xl bg-white/95 p-4 shadow-2xl border border-slate-200/80 backdrop-blur-xl dark:bg-slate-900/95 dark:border-slate-800 animate-in fade-in zoom-in-95 duration-150"
+      >
+        {/* Flyout Header */}
+        <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-100 dark:border-slate-800">
+          <div className="flex items-center gap-2">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400">
+              <Settings size={14} />
+            </div>
+            <div>
+              <h3 className="text-xs font-bold text-slate-900 dark:text-slate-100">
+                System Settings & Modules
+              </h3>
+              <p className="text-[10px] text-slate-400">
+                Click any module to configure
+              </p>
+            </div>
+          </div>
+          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+            {SETTINGS_SECTIONS.length} Modules
+          </span>
+        </div>
+
+        {/* 2-Column Expanded Icons & Labels Grid */}
+        <div className="grid grid-cols-2 gap-2 max-h-[380px] overflow-y-auto pr-1">
+          {SETTINGS_SECTIONS.map((sec) => {
+            const SecIcon = sec.icon;
+            return (
+              <button
+                key={sec.category}
+                type="button"
+                onClick={() => handleClickItem(sec.category)}
+                title={sec.title}
+                className="group/btn flex items-center gap-2.5 p-2 rounded-2xl border border-slate-100 dark:border-slate-800/80 bg-slate-50/70 hover:bg-indigo-50/80 hover:border-indigo-200 dark:bg-slate-800/40 dark:hover:bg-indigo-500/20 dark:hover:border-indigo-500/30 transition-all text-left hover:shadow-xs hover:scale-[1.02]"
+              >
+                <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${sec.color} shadow-xs group-hover/btn:scale-105 transition`}>
+                  <SecIcon size={16} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-semibold text-slate-800 dark:text-slate-200 group-hover/btn:text-indigo-600 dark:group-hover/btn:text-indigo-400 truncate">
+                    {sec.title}
+                  </p>
+                  <p className="text-[10px] text-slate-400 dark:text-slate-500 truncate mt-0.5">
+                    {sec.shortTitle || sec.badge}
+                  </p>
+                </div>
+              </button>
+            );
+          })}
+        </div>
       </div>
-    </div>,
+    </>,
     document.body
   );
 
@@ -468,21 +497,19 @@ function SettingsSideFlyoutItem({
         onClick={handleMainClick}
         className={`
           w-full group flex items-center ${sidebarCollapsed ? 'justify-center px-0' : 'gap-3 px-3'} rounded-xl py-2.5 text-sm font-medium transition
-          ${
-            isSettingsActive || isOpen
-              ? "bg-slate-950 text-white shadow-sm dark:bg-white dark:text-slate-950 font-semibold"
-              : "text-slate-600 hover:bg-slate-50 hover:text-slate-950 dark:text-slate-400 dark:hover:bg-slate-900 dark:hover:text-slate-100"
+          ${isSettingsActive || isOpen
+            ? "bg-slate-950 text-white shadow-sm dark:bg-white dark:text-slate-950 font-semibold"
+            : "text-slate-600 hover:bg-slate-50 hover:text-slate-950 dark:text-slate-400 dark:hover:bg-slate-900 dark:hover:text-slate-100"
           }
         `}
         title="Settings (Hover to see quick icons)"
       >
         <Settings
           size={18}
-          className={`shrink-0 ${
-            isSettingsActive || isOpen
-              ? "text-white dark:text-slate-950"
-              : "text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-300"
-          }`}
+          className={`shrink-0 ${isSettingsActive || isOpen
+            ? "text-white dark:text-slate-950"
+            : "text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-300"
+            }`}
         />
         {!sidebarCollapsed && (
           <span className="whitespace-nowrap truncate">Settings</span>

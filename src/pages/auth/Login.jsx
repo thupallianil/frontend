@@ -1,753 +1,412 @@
 import { useState } from "react";
-
+import { Link, useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 import {
   ArrowRight,
   Building2,
+  Check,
   Eye,
   EyeOff,
-  LockKeyhole,
+  Lock,
   Mail,
+  Moon,
   ShieldCheck,
+  Sparkles,
+  Sun,
   User,
+  Users,
 } from "lucide-react";
-
-import { Link, useNavigate } from "react-router-dom";
-
 import toast from "react-hot-toast";
 
 import api from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
-
-// ============================================================
-// LOGIN PAGE
-// ============================================================
+import { useApp } from "../../context/AppContext";
 
 export default function Login() {
   const navigate = useNavigate();
-
   const { login } = useAuth();
+  const { darkMode, toggleDarkMode } = useApp();
 
-  // ----------------------------------------------------------
-  // STATE
-  // ----------------------------------------------------------
-
-  // New public accounts are created as CLIENT.
+  // Role: "client" or "admin"
   const [role, setRole] = useState("client");
-
   const [email, setEmail] = useState("");
-
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [remember, setRemember] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const [showPassword, setShowPassword] =
-    useState(false);
-
-  const [remember, setRemember] =
-    useState(false);
-
-  const [loading, setLoading] =
-    useState(false);
-
-  // ==========================================================
-  // LOGIN
-  // ==========================================================
-
-  const handleLogin = async (event) => {
-    event.preventDefault();
-
-    // --------------------------------------------------------
-    // VALIDATION
-    // --------------------------------------------------------
+  const handleLogin = async (e) => {
+    e.preventDefault();
 
     if (!email.trim()) {
-      toast.error("Please enter your email");
+      toast.error("Please enter your email address.");
       return;
     }
 
     if (!password) {
-      toast.error("Please enter your password");
+      toast.error("Please enter your password.");
       return;
     }
 
-    setLoading(true);
-
     try {
-      // ------------------------------------------------------
-      // LOGIN REQUEST
-      // ------------------------------------------------------
+      setLoading(true);
 
-      console.log(
-        "LOGIN REQUEST:",
-        {
-          email: email.trim(),
-          role,
-        }
-      );
-
-      const response = await api.post(
-        "/auth/login/",
-        {
-          email: email.trim().toLowerCase(),
-          password,
-          role,
-        }
-      );
-
-      console.log(
-        "LOGIN RESPONSE:",
-        response.data
-      );
-
-      // ------------------------------------------------------
-      // BACKEND SUCCESS CHECK
-      // ------------------------------------------------------
+      const response = await api.post("/auth/login/", {
+        email: email.trim().toLowerCase(),
+        password,
+        role,
+      });
 
       if (!response.data?.success) {
-        toast.error(
-          response.data?.message ||
-          "Login failed."
-        );
-
+        toast.error(response.data?.message || "Login failed.");
         return;
       }
 
-      // ------------------------------------------------------
-      // EXTRACT DATA
-      // ------------------------------------------------------
+      const accessToken = response.data?.data?.tokens?.access;
+      const refreshToken = response.data?.data?.tokens?.refresh;
+      const user = response.data?.data?.user;
 
-      const accessToken =
-        response.data?.data?.tokens?.access;
-
-      const refreshToken =
-        response.data?.data?.tokens?.refresh;
-
-      const user =
-        response.data?.data?.user;
-
-      // ------------------------------------------------------
-      // CHECK TOKENS
-      // ------------------------------------------------------
-
-      if (!accessToken) {
-        toast.error(
-          "Access token was not received."
-        );
-
+      if (!accessToken || !refreshToken || !user) {
+        toast.error("Invalid response from server. Please try again.");
         return;
       }
-
-      if (!refreshToken) {
-        toast.error(
-          "Refresh token was not received."
-        );
-
-        return;
-      }
-
-      if (!user) {
-        toast.error(
-          "User information was not received."
-        );
-
-        return;
-      }
-
-      // ------------------------------------------------------
-      // DETERMINE ACTUAL ROLE
-      // ------------------------------------------------------
 
       const userIsAdmin =
         user?.is_staff === true ||
         user?.is_superuser === true ||
         user?.role === "admin";
 
-      // ------------------------------------------------------
-      // FRONTEND ROLE VALIDATION
-      // ------------------------------------------------------
-
-      if (
-        role === "admin" &&
-        !userIsAdmin
-      ) {
-        toast.error(
-          "This account is not an admin account. Please use the Client tab."
-        );
-
+      // Role check
+      if (role === "admin" && !userIsAdmin) {
+        toast.error("This account is not an admin account. Please switch to Client tab.");
         return;
       }
 
-      if (
-        role === "client" &&
-        userIsAdmin
-      ) {
-        toast.error(
-          "This is an admin account. Please use the Admin tab."
-        );
-
+      if (role === "client" && userIsAdmin) {
+        toast.error("This is an admin account. Please switch to Admin tab.");
         return;
       }
 
-      // ------------------------------------------------------
-      // SAVE AUTHENTICATION
-      // ------------------------------------------------------
-
-      localStorage.setItem(
-        "access_token",
-        accessToken
-      );
-
-      localStorage.setItem(
-        "refresh_token",
-        refreshToken
-      );
-
-      localStorage.setItem(
-        "user",
-        JSON.stringify(user)
-      );
-
-      localStorage.setItem(
-        "auth_user",
-        JSON.stringify(user)
-      );
-
-      localStorage.setItem(
-        "remember_me",
-        remember
-          ? "true"
-          : "false"
-      );
-
-      // ------------------------------------------------------
-      // UPDATE AUTH CONTEXT
-      // ------------------------------------------------------
+      // Persist auth
+      localStorage.setItem("access_token", accessToken);
+      localStorage.setItem("refresh_token", refreshToken);
+      localStorage.setItem("user", JSON.stringify(user));
+      localStorage.setItem("auth_user", JSON.stringify(user));
+      localStorage.setItem("remember_me", remember ? "true" : "false");
 
       login(user);
 
-      // ------------------------------------------------------
-      // SUCCESS
-      // ------------------------------------------------------
-
-      toast.success(
-        response.data?.message ||
-        "Login successful!"
-      );
-
-      // ------------------------------------------------------
-      // REDIRECT
-      // ------------------------------------------------------
+      toast.success(response.data?.message || "Welcome back! Login successful.");
 
       if (userIsAdmin) {
-        navigate(
-          "/admin/dashboard",
-          {
-            replace: true,
-          }
-        );
+        navigate("/admin/dashboard", { replace: true });
       } else {
-        navigate(
-          "/client/dashboard",
-          {
-            replace: true,
-          }
-        );
+        navigate("/client/dashboard", { replace: true });
       }
-
     } catch (error) {
-      console.error(
-        "LOGIN ERROR:",
-        error
-      );
-
-      // ------------------------------------------------------
-      // BACKEND ERROR
-      // ------------------------------------------------------
+      console.error("Login error:", error);
 
       if (error.response) {
-        console.error(
-          "LOGIN STATUS:",
-          error.response.status
-        );
-
-        console.error(
-          "LOGIN DATA:",
-          error.response.data
-        );
-
-        const data =
-          error.response.data;
-
-        // Role mismatch
-        if (
-          error.response.status === 403
-        ) {
-          toast.error(
-            data?.message ||
-            "You do not have permission to login with this role."
-          );
-
+        const data = error.response.data;
+        if (error.response.status === 403) {
+          toast.error(data?.message || "You do not have permission to login with this role.");
           return;
         }
-
-        // Validation errors
-        if (
-          data?.errors
-        ) {
-          const firstError =
-            Object.values(
-              data.errors
-            )[0];
-
-          const message =
-            Array.isArray(firstError)
-              ? firstError[0]
-              : firstError;
-
-          toast.error(
-            message ||
-            "Login validation failed."
-          );
-
+        if (data?.errors) {
+          const firstError = Object.values(data.errors)[0];
+          const msg = Array.isArray(firstError) ? firstError[0] : firstError;
+          toast.error(msg || "Login validation failed.");
           return;
         }
-
-        toast.error(
-          data?.message ||
-          data?.detail ||
-          "Invalid email or password."
-        );
-
+        toast.error(data?.message || data?.detail || "Invalid email or password.");
         return;
       }
-
-      // ------------------------------------------------------
-      // NETWORK ERROR
-      // ------------------------------------------------------
 
       if (error.request) {
-        toast.error(
-          "Cannot connect to the Django server."
-        );
-
+        toast.error("Cannot connect to server. Please check your network connection.");
         return;
       }
 
-      // ------------------------------------------------------
-      // UNKNOWN ERROR
-      // ------------------------------------------------------
-
-      toast.error(
-        "Something went wrong."
-      );
-
+      toast.error("An unexpected error occurred. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
-  // ==========================================================
-  // CURRENT UI ROLE
-  // ==========================================================
-
-  const isAdmin =
-    role === "admin";
-
-  // ==========================================================
-  // UI
-  // ==========================================================
+  const handleGoogleLoginMock = () => {
+    toast("Google OAuth integration can be configured in backend settings.", {
+      icon: "ℹ️",
+    });
+  };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 p-4">
+    <div className="min-h-screen flex flex-col justify-between bg-[#fbfbfb] dark:bg-slate-950 text-slate-900 dark:text-slate-100 selection:bg-slate-900 selection:text-white transition-colors duration-300">
+      {/* Top Bar with Theme Switcher & Home Link */}
+      <div className="w-full max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+        <Link
+          to="/"
+          className="inline-flex items-center gap-2 text-xs font-semibold text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition"
+        >
+          <span>← Back to Home</span>
+        </Link>
 
-      {/* ======================================================
-          BACKGROUND
-      ====================================================== */}
-
-      <div className="pointer-events-none fixed inset-0 overflow-hidden">
-
-        <div className="absolute -top-32 -left-32 h-96 w-96 rounded-full bg-indigo-600/20 blur-3xl" />
-
-        <div className="absolute -bottom-32 -right-32 h-96 w-96 rounded-full bg-violet-600/20 blur-3xl" />
-
-        <div className="absolute top-1/2 left-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full bg-blue-600/10 blur-3xl" />
-
+        <button
+          type="button"
+          onClick={toggleDarkMode}
+          className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 transition"
+          title="Toggle theme"
+        >
+          {darkMode ? <Sun size={15} /> : <Moon size={15} />}
+        </button>
       </div>
 
-      {/* ======================================================
-          MAIN CARD
-      ====================================================== */}
+      {/* Main Container */}
+      <div className="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8 py-8">
+        <div className="w-full max-w-5xl rounded-3xl bg-white dark:bg-slate-900/90 border border-slate-200/80 dark:border-slate-800 shadow-2xl shadow-slate-200/50 dark:shadow-none overflow-hidden">
+          <div className="grid grid-cols-1 lg:grid-cols-12 min-h-[580px]">
+            {/* ======================================================
+                LEFT COLUMN: GREETING & BRAND HERO
+            ====================================================== */}
+            <div className="lg:col-span-6 p-8 sm:p-12 lg:p-14 flex flex-col justify-between border-b lg:border-b-0 lg:border-r border-slate-100 dark:border-slate-800/80 bg-white dark:bg-slate-900">
+              <div>
+                {/* Starburst / Asterisk Geometric Icon */}
+                <motion.div
+                  initial={{ rotate: -45, scale: 0.8, opacity: 0 }}
+                  animate={{ rotate: 0, scale: 1, opacity: 1 }}
+                  transition={{ duration: 0.5 }}
+                  className="mb-8"
+                >
+                  <svg
+                    className="w-12 h-12 text-slate-900 dark:text-white"
+                    viewBox="0 0 100 100"
+                    fill="currentColor"
+                  >
+                    {/* 8-point geometric starburst matching the design */}
+                    <path d="M50 0 L58 35 L93 20 L68 50 L93 80 L58 65 L50 100 L42 65 L7 80 L32 50 L7 20 L42 35 Z" />
+                  </svg>
+                </motion.div>
 
-      <div className="relative w-full max-w-md">
+                {/* Big Bold Greeting */}
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.1 }}
+                  className="space-y-3"
+                >
+                  <h1 className="text-4xl sm:text-5xl font-black tracking-tight text-slate-950 dark:text-white leading-[1.1]">
+                    Hello<br />
+                    InvoiceFlow! <span className="inline-block animate-wiggle">👋</span>
+                  </h1>
 
-        {/* ====================================================
-            LOGO
-        ==================================================== */}
-
-        <div className="mb-8 flex flex-col items-center gap-3 text-center">
-
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10 backdrop-blur border border-white/20 shadow-xl">
-
-            <LockKeyhole
-              size={26}
-              className="text-white"
-            />
-
-          </div>
-
-          <div>
-
-            <p className="text-2xl font-black text-white tracking-tight">
-              InvoiceFlow
-            </p>
-
-            <p className="text-sm text-slate-400">
-              Business Management Platform
-            </p>
-
-          </div>
-
-        </div>
-
-        {/* ====================================================
-            CARD
-        ==================================================== */}
-
-        <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur-2xl shadow-2xl p-8">
-
-          {/* ==================================================
-              ROLE SELECTOR
-          ================================================== */}
-
-          <div className="mb-7 flex rounded-2xl bg-white/5 border border-white/10 p-1">
-
-            {/* ADMIN */}
-
-            <button
-              type="button"
-              disabled={loading}
-              onClick={() =>
-                setRole("admin")
-              }
-              className={`flex flex-1 items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold transition-all duration-200 ${isAdmin
-                  ? "bg-white text-slate-900 shadow-md"
-                  : "text-slate-400 hover:text-white"
-                } disabled:cursor-not-allowed disabled:opacity-60`}
-            >
-
-              <Building2
-                size={16}
-              />
-
-              Admin
-
-            </button>
-
-            {/* CLIENT */}
-
-            <button
-              type="button"
-              disabled={loading}
-              onClick={() =>
-                setRole("client")
-              }
-              className={`flex flex-1 items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold transition-all duration-200 ${!isAdmin
-                  ? "bg-white text-slate-900 shadow-md"
-                  : "text-slate-400 hover:text-white"
-                } disabled:cursor-not-allowed disabled:opacity-60`}
-            >
-
-              <User
-                size={16}
-              />
-
-              Client
-
-            </button>
-
-          </div>
-
-          {/* ==================================================
-              HEADER
-          ================================================== */}
-
-          <div className="mb-6">
-
-            <h2 className="text-2xl font-black text-white">
-
-              {isAdmin
-                ? "Admin Login"
-                : "Client Login"}
-
-            </h2>
-
-            <p className="mt-1 text-sm text-slate-400">
-
-              {isAdmin
-                ? "Sign in to manage your business dashboard"
-                : "Sign in to view your invoices and payments"}
-
-            </p>
-
-          </div>
-
-          {/* ==================================================
-              FORM
-          ================================================== */}
-
-          <form
-            onSubmit={handleLogin}
-            className="space-y-4"
-          >
-
-            {/* =================================================
-                EMAIL
-            ================================================= */}
-
-            <div>
-
-              <label
-                htmlFor="login-email"
-                className="mb-1.5 block text-sm font-semibold text-slate-300"
-              >
-                Email address
-              </label>
-
-              <div className="relative">
-
-                <Mail
-                  size={17}
-                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
-                />
-
-                <input
-                  id="login-email"
-                  type="email"
-                  value={email}
-                  onChange={(event) =>
-                    setEmail(
-                      event.target.value
-                    )
-                  }
-                  placeholder="you@example.com"
-                  autoComplete="email"
-                  disabled={loading}
-                  className="w-full rounded-xl border border-white/10 bg-white/5 py-3 pl-10 pr-4 text-sm text-white placeholder-slate-500 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 disabled:opacity-50"
-                />
-
+                  <p className="text-sm sm:text-base leading-relaxed text-slate-600 dark:text-slate-400 max-w-md pt-2">
+                    Skip repetitive and manual billing tasks. Get paid 3x faster through automated invoicing, dynamic UPI QR payments, and self-service client portals!
+                  </p>
+                </motion.div>
               </div>
 
+              {/* Bottom Left Note / Features Chip */}
+              <div className="pt-8 mt-6 border-t border-slate-100 dark:border-slate-800/60 flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
+                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400 font-bold text-[10px]">
+                  ✓
+                </div>
+                <span>GST Compliant • Instant UPI Settlement • 99.9% Uptime</span>
+              </div>
             </div>
 
-            {/* =================================================
-                PASSWORD
-            ================================================= */}
+            {/* ======================================================
+                RIGHT COLUMN: LOGIN FORM
+            ====================================================== */}
+            <div className="lg:col-span-6 p-8 sm:p-12 lg:p-14 flex flex-col justify-between bg-white dark:bg-slate-900/60">
+              <div>
+                {/* Brand Header */}
+                <div className="flex items-center justify-between mb-8">
+                  <span className="text-base font-black tracking-tight text-slate-950 dark:text-white">
+                    InvoiceFlow
+                  </span>
 
-            <div>
+                  {/* Role Switcher Pills */}
+                  <div className="flex items-center gap-1 rounded-xl bg-slate-100 p-1 dark:bg-slate-800">
+                    <button
+                      type="button"
+                      onClick={() => setRole("client")}
+                      className={`flex items-center gap-1.5 rounded-lg px-3 py-1 text-xs font-semibold transition ${
+                        role === "client"
+                          ? "bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white"
+                          : "text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+                      }`}
+                    >
+                      <User size={13} />
+                      <span>Client</span>
+                    </button>
 
-              <div className="mb-1.5 flex items-center justify-between">
+                    <button
+                      type="button"
+                      onClick={() => setRole("admin")}
+                      className={`flex items-center gap-1.5 rounded-lg px-3 py-1 text-xs font-semibold transition ${
+                        role === "admin"
+                          ? "bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white"
+                          : "text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+                      }`}
+                    >
+                      <Building2 size={13} />
+                      <span>Admin</span>
+                    </button>
+                  </div>
+                </div>
 
-                <label
-                  htmlFor="login-password"
-                  className="text-sm font-semibold text-slate-300"
-                >
-                  Password
-                </label>
+                {/* Form Title & Subtitle */}
+                <div className="space-y-1 mb-6">
+                  <h2 className="text-2xl font-extrabold text-slate-950 dark:text-white tracking-tight">
+                    Welcome Back!
+                  </h2>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Don't have an account?{" "}
+                    <Link
+                      to="/signup"
+                      className="font-semibold text-slate-900 underline underline-offset-2 hover:text-blue-600 dark:text-slate-200 dark:hover:text-blue-400 transition"
+                    >
+                      Create a new account now.
+                    </Link>{" "}
+                    It's FREE! Takes less than a minute.
+                  </p>
+                </div>
 
-                <Link
-                  to="/forgot-password"
-                  className="text-xs font-semibold text-indigo-400 hover:text-indigo-300 transition"
-                >
-                  Forgot password?
-                </Link>
+                {/* Form */}
+                <form onSubmit={handleLogin} className="space-y-5">
+                  {/* Email Field */}
+                  <div>
+                    <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                      Email Address
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="email"
+                        required
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="e.g. yourname@company.com"
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100 dark:focus:border-blue-500 dark:focus:ring-blue-500 transition"
+                      />
+                    </div>
+                  </div>
 
-              </div>
+                  {/* Password Field */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">
+                        Password
+                      </label>
+                      <Link
+                        to="/forgot-password"
+                        className="text-xs font-semibold text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition"
+                      >
+                        Forgot password?
+                      </Link>
+                    </div>
+                    <div className="relative">
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        required
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="••••••••••••"
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2.5 pr-10 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100 dark:focus:border-blue-500 dark:focus:ring-blue-500 transition"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                        tabIndex={-1}
+                      >
+                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
+                  </div>
 
-              <div className="relative">
-
-                <LockKeyhole
-                  size={17}
-                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
-                />
-
-                <input
-                  id="login-password"
-                  type={
-                    showPassword
-                      ? "text"
-                      : "password"
-                  }
-                  value={password}
-                  onChange={(event) =>
-                    setPassword(
-                      event.target.value
-                    )
-                  }
-                  placeholder="Enter your password"
-                  autoComplete="current-password"
-                  disabled={loading}
-                  className="w-full rounded-xl border border-white/10 bg-white/5 py-3 pl-10 pr-11 text-sm text-white placeholder-slate-500 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 disabled:opacity-50"
-                />
-
-                <button
-                  type="button"
-                  disabled={loading}
-                  onClick={() =>
-                    setShowPassword(
-                      (current) =>
-                        !current
-                    )
-                  }
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition disabled:opacity-50"
-                  aria-label={
-                    showPassword
-                      ? "Hide password"
-                      : "Show password"
-                  }
-                >
-
-                  {showPassword ? (
-                    <EyeOff
-                      size={17}
+                  {/* Remember Me Checkbox */}
+                  <div className="flex items-center gap-2">
+                    <input
+                      id="remember-me"
+                      type="checkbox"
+                      checked={remember}
+                      onChange={(e) => setRemember(e.target.checked)}
+                      className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900 dark:border-slate-700 dark:bg-slate-800 cursor-pointer"
                     />
-                  ) : (
-                    <Eye
-                      size={17}
-                    />
-                  )}
+                    <label
+                      htmlFor="remember-me"
+                      className="text-xs text-slate-600 dark:text-slate-400 cursor-pointer select-none"
+                    >
+                      Remember me on this device
+                    </label>
+                  </div>
 
-                </button>
+                  {/* Primary Submit Button: Black / Dark Pill Button */}
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full flex items-center justify-center gap-2 rounded-xl bg-slate-950 hover:bg-slate-900 text-white dark:bg-white dark:hover:bg-slate-100 dark:text-slate-950 py-3 text-sm font-bold shadow-md hover:shadow-lg transition-all duration-200 disabled:opacity-50 cursor-pointer"
+                  >
+                    {loading ? (
+                      <span className="inline-flex items-center gap-2">
+                        <span className="h-4 w-4 rounded-full border-2 border-white/20 border-t-white animate-spin" />
+                        <span>Signing In...</span>
+                      </span>
+                    ) : (
+                      <span>Login Now</span>
+                    )}
+                  </button>
 
+                  {/* Google Social Login Button */}
+                  <button
+                    type="button"
+                    onClick={handleGoogleLoginMock}
+                    className="w-full flex items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 py-2.5 text-xs font-bold text-slate-700 shadow-sm transition dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 cursor-pointer"
+                  >
+                    {/* Google Multicolor G Icon */}
+                    <svg className="w-4 h-4" viewBox="0 0 24 24">
+                      <path
+                        fill="#4285F4"
+                        d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"
+                      />
+                      <path
+                        fill="#34A853"
+                        d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.34 24 12 24z"
+                      />
+                      <path
+                        fill="#FBBC05"
+                        d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 10.04 0 12s.45 3.82 1.25 5.42l4.03-3.15z"
+                      />
+                      <path
+                        fill="#EA4335"
+                        d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
+                      />
+                    </svg>
+                    <span>Login with Google</span>
+                  </button>
+
+                  {/* Forgot Password Link Below */}
+                  <div className="text-center pt-2">
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      Forgot password?{" "}
+                      <Link
+                        to="/forgot-password"
+                        className="font-bold text-slate-900 underline underline-offset-2 hover:text-blue-600 dark:text-white dark:hover:text-blue-400 transition"
+                      >
+                        Click here
+                      </Link>
+                    </p>
+                  </div>
+                </form>
               </div>
-
             </div>
-
-            {/* =================================================
-                REMEMBER ME
-            ================================================= */}
-
-            <label className="flex cursor-pointer items-center gap-2.5">
-
-              <input
-                type="checkbox"
-                checked={remember}
-                onChange={(event) =>
-                  setRemember(
-                    event.target.checked
-                  )
-                }
-                disabled={loading}
-                className="h-4 w-4 rounded border-slate-600 bg-white/5 accent-indigo-500"
-              />
-
-              <span className="text-sm text-slate-400">
-                Remember me
-              </span>
-
-            </label>
-
-            {/* =================================================
-                SUBMIT
-            ================================================= */}
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="group mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 py-3.5 text-sm font-bold text-white shadow-lg shadow-indigo-600/30 transition duration-200 hover:bg-indigo-500 hover:shadow-indigo-500/40 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-
-              {loading ? (
-                <>
-                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-
-                  Signing in...
-                </>
-              ) : (
-                <>
-                  Sign in as{" "}
-                  {isAdmin
-                    ? "Admin"
-                    : "Client"}
-
-                  <ArrowRight
-                    size={17}
-                    className="transition-transform group-hover:translate-x-1"
-                  />
-                </>
-              )}
-
-            </button>
-
-          </form>
-
-          {/* ==================================================
-              DIVIDER
-          ================================================== */}
-
-          <div className="my-6 flex items-center gap-3">
-
-            <div className="h-px flex-1 bg-white/10" />
-
-            <span className="text-xs text-slate-500">
-              or
-            </span>
-
-            <div className="h-px flex-1 bg-white/10" />
-
           </div>
-
-          {/* ==================================================
-              INFO BOX
-          ================================================== */}
-
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-
-            <div className="flex items-center gap-2 mb-1.5">
-
-              <ShieldCheck
-                size={16}
-                className="text-emerald-400"
-              />
-
-              <p className="text-sm font-semibold text-white">
-
-                {isAdmin
-                  ? "Admin account"
-                  : "Client account"}
-
-              </p>
-
-            </div>
-
-            <p className="text-xs leading-5 text-slate-400">
-
-              {isAdmin
-                ? "Admin accounts have full access to manage clients, invoices, quotes, payments and settings."
-                : "Client accounts can view invoices, quotes and make payments."}
-
-            </p>
-
-          </div>
-
-          {/* ==================================================
-              SIGNUP
-          ================================================== */}
-
-          <p className="mt-6 text-center text-sm text-slate-400">
-
-            Don't have an account?{" "}
-
-            <Link
-              to="/signup"
-              className="font-bold text-indigo-400 hover:text-indigo-300 transition hover:underline"
-            >
-              Create account
-            </Link>
-
-          </p>
-
         </div>
-
       </div>
 
+      {/* Footer Copyright */}
+      <footer className="w-full max-w-7xl mx-auto px-6 py-6 text-center text-xs text-slate-400 dark:text-slate-500">
+        © {new Date().getFullYear()} InvoiceFlow. All rights reserved.
+      </footer>
     </div>
   );
 }

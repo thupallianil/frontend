@@ -17,9 +17,10 @@ import ClientLayout from "./components/layout/ClientLayout";
 import SettingsLayout from "./components/layout/SettingsLayout";
 
 /* =========================================================
-   PUBLIC AUTH
+   PUBLIC AUTH & HOME
 ========================================================= */
 
+import LandingPage from "./pages/public/LandingPage";
 import Login from "./pages/auth/Login";
 import Signup from "./pages/auth/Signup";
 import ForgotPassword from "./pages/auth/ForgotPassword";
@@ -39,6 +40,15 @@ import ClientList from "./pages/admin/clients/ClientList";
 import AddClient from "./pages/admin/clients/AddClient";
 import EditClient from "./pages/admin/clients/EditClient";
 import ViewClient from "./pages/admin/clients/ViewClient";
+
+/* =========================================================
+   ADMIN VENDORS
+========================================================= */
+
+import VendorList from "./pages/admin/vendors/VendorList";
+import AddVendor from "./pages/admin/vendors/AddVendor";
+import EditVendor from "./pages/admin/vendors/EditVendor";
+import ViewVendor from "./pages/admin/vendors/ViewVendor";
 
 /* =========================================================
    ADMIN QUOTES
@@ -146,12 +156,7 @@ export default function App() {
 
       <Route
         path="/"
-        element={
-          <Navigate
-            to="/login"
-            replace
-          />
-        }
+        element={<LandingPage />}
       />
 
       <Route
@@ -233,6 +238,30 @@ export default function App() {
             <Route
               path="clients/:id"
               element={<ViewClient />}
+            />
+
+            {/* =================================================
+                VENDORS
+            ================================================= */}
+
+            <Route
+              path="vendors"
+              element={<VendorList />}
+            />
+
+            <Route
+              path="vendors/add"
+              element={<AddVendor />}
+            />
+
+            <Route
+              path="vendors/:id/edit"
+              element={<EditVendor />}
+            />
+
+            <Route
+              path="vendors/:id"
+              element={<ViewVendor />}
             />
 
             {/* =================================================

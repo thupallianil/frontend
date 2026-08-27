@@ -54,6 +54,7 @@ export default function Navbar({
   const getPageTitle = (path) => {
     if (path.includes("/dashboard")) return "Dashboard";
     if (path.includes("/clients")) return "Clients";
+    if (path.includes("/vendors")) return "Vendors & Suppliers";
     if (path.includes("/quotes")) return "Quotes";
     if (path.includes("/invoices")) return "Invoices";
     if (path.includes("/payments")) return "Payments";

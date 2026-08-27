@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, FileText, Users, FileSignature, Loader2 } from "lucide-react";
+import { Search, FileText, Users, FileSignature, Building2, Loader2 } from "lucide-react";
 import dashboardService from "../../services/dashboardService";
 
 export default function GlobalSearch({ query, onClose, onClear }) {
@@ -64,10 +64,12 @@ export default function GlobalSearch({ query, onClose, onClear }) {
             <div className="space-y-1">
               {results.map((result) => {
                 const isClient = result.type === "client";
+                const isVendor = result.type === "vendor";
                 const isInvoice = result.type === "invoice";
                 
                 let Icon = FileSignature;
                 if (isClient) Icon = Users;
+                if (isVendor) Icon = Building2;
                 if (isInvoice) Icon = FileText;
 
                 return (
@@ -82,6 +84,7 @@ export default function GlobalSearch({ query, onClose, onClear }) {
                   >
                     <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
                       isClient ? "bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400" :
+                      isVendor ? "bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400" :
                       isInvoice ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400" :
                       "bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400"
                     }`}>

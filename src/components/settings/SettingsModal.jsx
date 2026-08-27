@@ -213,15 +213,22 @@ const SETTING_CONFIGS = {
 
 export default function SettingsModal({
   open,
-  category = "general",
+  category: initialCategory = "general",
   onClose,
   onSaved,
 }) {
   const { settings, updateSettings } = useSettings();
+  const [category, setCategory] = useState(initialCategory || "general");
   const [form, setForm] = useState({});
   const [saving, setSaving] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewType, setPreviewType] = useState("quotation");
+
+  useEffect(() => {
+    if (initialCategory) {
+      setCategory(initialCategory);
+    }
+  }, [initialCategory, open]);
 
   const config = SETTING_CONFIGS[category] || SETTING_CONFIGS.general;
   const Icon = config.icon;
@@ -263,7 +270,7 @@ export default function SettingsModal({
       <AnimatePresence>
         {open && (
           <motion.div
-            key={`settings-modal-${category}`}
+            key="settings-modal"
             className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -279,10 +286,10 @@ export default function SettingsModal({
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.96, y: 15 }}
               transition={{ duration: 0.2 }}
-              className="w-full max-w-2xl overflow-hidden rounded-3xl bg-white shadow-2xl dark:bg-slate-900 dark:border dark:border-slate-800 max-h-[90vh] flex flex-col"
+              className="w-full max-w-3xl overflow-hidden rounded-3xl bg-white shadow-2xl dark:bg-slate-900 dark:border dark:border-slate-800 max-h-[90vh] flex flex-col"
             >
               {/* Header */}
-              <div className="flex items-center justify-between border-b border-slate-100 px-6 py-5 dark:border-slate-800">
+              <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4 dark:border-slate-800 shrink-0">
                 <div className="flex items-center gap-3">
                   <div className={`flex h-11 w-11 items-center justify-center rounded-2xl ${config.color}`}>
                     <Icon size={20} />

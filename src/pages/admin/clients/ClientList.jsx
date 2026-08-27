@@ -289,7 +289,7 @@ export default function ClientList() {
           icon={Users}
           title="Total clients"
           value={totalClients}
-          description="Clients in database"
+          description="Clients "
         />
 
         <StatCard
