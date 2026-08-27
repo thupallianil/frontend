@@ -735,7 +735,7 @@ export default function LandingPage() {
                       <p className="text-xs text-slate-500">Auto-incrementing sequence, tax breakdown, and instant download</p>
                     </div>
                     <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-black text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300">
-                      ₹ 3,45,000 Collected This Month
+                      ₹ {Number(liveStats.total_paid_volume || 0).toLocaleString()} Processed & Settled
                     </span>
                   </div>
 
@@ -774,7 +774,7 @@ export default function LandingPage() {
                       <p className="text-xs text-slate-500">Send proposals, let clients approve digitally, and convert directly</p>
                     </div>
                     <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-black text-blue-800 dark:bg-blue-500/20 dark:text-blue-300">
-                      89% Acceptance Velocity
+                      {liveStats.total_quotes > 0 ? `${liveStats.total_quotes} Quotes Created` : "High Acceptance Velocity"}
                     </span>
                   </div>
 
@@ -826,7 +826,7 @@ export default function LandingPage() {
                       <p className="text-xs text-slate-500">Manage supplier bank details, IFSC, GSTIN, PAN, and payment terms internally</p>
                     </div>
                     <span className="rounded-full bg-purple-100 px-3 py-1 text-xs font-black text-purple-800 dark:bg-purple-500/20 dark:text-purple-300">
-                      Internal Admin Only
+                      {liveStats.total_vendors} Active Suppliers
                     </span>
                   </div>
 
@@ -891,7 +891,7 @@ export default function LandingPage() {
                       <p className="text-xs text-slate-500">24/7 dedicated portal login for clients to review quotes, download receipts, and open tickets</p>
                     </div>
                     <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-black text-blue-800 dark:bg-blue-500/20 dark:text-blue-300">
-                      Dedicated Role
+                      {liveStats.total_clients} Active Portal Clients
                     </span>
                   </div>
 
@@ -920,34 +920,43 @@ export default function LandingPage() {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100">Financial Intelligence & Profit/Loss</h4>
-                      <p className="text-xs text-slate-500">Track revenue realization, overdue receivables, and tax liabilities</p>
+                      <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100">Financial Intelligence & Real-Time Ledger</h4>
+                      <p className="text-xs text-slate-500">Live platform totals queried directly from the backend database</p>
                     </div>
                     <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-black text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300">
-                      +38% Collection Realization
+                      Live Platform Metrics
                     </span>
                   </div>
 
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     <div className="rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900">
                       <p className="text-[10px] font-bold text-slate-400 uppercase">Gross Billed</p>
-                      <p className="text-base font-black text-slate-900 dark:text-slate-100 mt-0.5">₹ 14,80,000</p>
+                      <p className="text-base font-black text-slate-900 dark:text-slate-100 mt-0.5">
+                        ₹ {Number(liveStats.total_volume || 0).toLocaleString()}
+                      </p>
                     </div>
                     <div className="rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900">
                       <p className="text-[10px] font-bold text-slate-400 uppercase">Total Collected</p>
-                      <p className="text-base font-black text-emerald-600 dark:text-emerald-400 mt-0.5">₹ 12,45,000</p>
+                      <p className="text-base font-black text-emerald-600 dark:text-emerald-400 mt-0.5">
+                        ₹ {Number(liveStats.total_paid_volume || 0).toLocaleString()}
+                      </p>
                     </div>
                     <div className="rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900">
-                      <p className="text-[10px] font-bold text-slate-400 uppercase">Pending Dues</p>
-                      <p className="text-base font-black text-amber-600 dark:text-amber-400 mt-0.5">₹ 2,35,000</p>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase">Total Invoices</p>
+                      <p className="text-base font-black text-blue-600 dark:text-blue-400 mt-0.5">
+                        {Number(liveStats.total_invoices || 0).toLocaleString()}
+                      </p>
                     </div>
                     <div className="rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900">
-                      <p className="text-[10px] font-bold text-slate-400 uppercase">GST Tax Collected</p>
-                      <p className="text-base font-black text-indigo-600 dark:text-indigo-400 mt-0.5">₹ 2,24,100</p>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase">Total Clients & Vendors</p>
+                      <p className="text-base font-black text-indigo-600 dark:text-indigo-400 mt-0.5">
+                        {(Number(liveStats.total_clients || 0) + Number(liveStats.total_vendors || 0)).toLocaleString()}
+                      </p>
                     </div>
                   </div>
                 </div>
               )}
+
 
             </div>
           </div>

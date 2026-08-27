@@ -238,8 +238,10 @@ export default function ProfileModal({
           await api.post("/auth/change-password/", {
             old_password: oldPassword,
             new_password: newPassword,
+            new_password_confirm: confirmPassword || newPassword,
           });
           toast.success("Password changed successfully");
+
         }
 
         toast.success("Account details updated successfully");

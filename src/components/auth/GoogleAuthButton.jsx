@@ -46,8 +46,13 @@ export default function GoogleAuthButton({
 }) {
   const [loading, setLoading] = useState(false);
   const hiddenBtnRef = useRef(null);
+  const roleRef = useRef(role);
   const navigate = useNavigate();
   const { login } = useAuth();
+
+  useEffect(() => {
+    roleRef.current = role;
+  }, [role]);
 
   useEffect(() => {
     let isMounted = true;
@@ -57,12 +62,16 @@ export default function GoogleAuthButton({
         if (!isMounted || !gsi || !GOOGLE_CLIENT_ID) return;
 
         try {
-          gsi.initialize({
-            client_id: GOOGLE_CLIENT_ID,
-            callback: handleGoogleCredentialResponse,
-            auto_select: false,
-            cancel_on_tap_outside: true,
-          });
+          // Initialize once or when client id changes
+          if (!window.__gsi_initialized_client_id || window.__gsi_initialized_client_id !== GOOGLE_CLIENT_ID) {
+            gsi.initialize({
+              client_id: GOOGLE_CLIENT_ID,
+              callback: (res) => handleGoogleCredentialResponse(res),
+              auto_select: false,
+              cancel_on_tap_outside: true,
+            });
+            window.__gsi_initialized_client_id = GOOGLE_CLIENT_ID;
+          }
 
           if (hiddenBtnRef.current) {
             hiddenBtnRef.current.innerHTML = "";
@@ -87,7 +96,7 @@ export default function GoogleAuthButton({
     return () => {
       isMounted = false;
     };
-  }, [role]);
+  }, []);
 
   const handleGoogleCredentialResponse = async (response) => {
     if (!response?.credential) {
@@ -97,8 +106,10 @@ export default function GoogleAuthButton({
 
     setLoading(true);
     try {
-      const authResult = await loginWithGoogle(response.credential, role);
+      const currentRole = roleRef.current || "client";
+      const authResult = await loginWithGoogle(response.credential, currentRole);
       const user = authResult.user;
+
 
       if (!user) {
         toast.error("Invalid user response from server.");

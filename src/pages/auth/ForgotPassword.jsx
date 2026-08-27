@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import {
   ArrowLeft,
@@ -542,4 +543,4 @@ function getPasswordStrength(password) {
     { level: 4, label: "Strong", bar: "bg-emerald-500", text: "text-emerald-500" },
   ];
   return map[score - 1] || map[0];
-}
+}
