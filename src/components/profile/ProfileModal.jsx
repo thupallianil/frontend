@@ -249,17 +249,36 @@ export default function ProfileModal({
         onClose?.();
       } catch (err) {
         console.error("Save account error:", err);
-        toast.error(
-          err?.response?.data?.message ||
-          err?.response?.data?.detail ||
-          err?.response?.data?.old_password?.[0] ||
-          "Unable to update account details"
-        );
+        const data = err?.response?.data;
+        let errMsg = "Unable to update account details";
+
+        if (typeof data === "string") {
+          errMsg = data;
+        } else if (data?.message) {
+          errMsg = data.message;
+        } else if (data?.detail) {
+          errMsg = data.detail;
+        } else if (data?.old_password?.[0]) {
+          errMsg = `Current Password: ${data.old_password[0]}`;
+        } else if (data?.new_password?.[0]) {
+          errMsg = `New Password: ${data.new_password[0]}`;
+        } else if (data?.new_password_confirm?.[0]) {
+          errMsg = `Confirm Password: ${data.new_password_confirm[0]}`;
+        } else if (data && typeof data === "object") {
+          const firstKey = Object.keys(data)[0];
+          if (firstKey) {
+            const val = data[firstKey];
+            errMsg = Array.isArray(val) ? `${firstKey}: ${val[0]}` : `${firstKey}: ${val}`;
+          }
+        }
+
+        toast.error(errMsg);
       } finally {
         setSaving(false);
       }
     }
   };
+
 
   const modalContent = (
     <AnimatePresence>
