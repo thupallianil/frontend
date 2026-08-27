@@ -44,6 +44,72 @@ export async function login(email, password, role = "admin") {
 // REGISTER
 // ============================================================
 
+export async function requestSignupOtp(dataOrUsername, email, password, password_confirm, role = "client") {
+  let payload = {};
+  if (typeof dataOrUsername === "object" && dataOrUsername !== null) {
+    payload = {
+      username: dataOrUsername.username || dataOrUsername.name,
+      email: dataOrUsername.email?.trim().toLowerCase(),
+      password: dataOrUsername.password,
+      password_confirm: dataOrUsername.password_confirm || dataOrUsername.confirmPassword || dataOrUsername.password,
+      role: dataOrUsername.role || "client",
+    };
+  } else {
+    payload = {
+      username: dataOrUsername,
+      email: email?.trim().toLowerCase(),
+      password,
+      password_confirm: password_confirm || password,
+      role,
+    };
+  }
+
+  const response = await api.post("auth/register/request-otp/", payload);
+  return response.data;
+}
+
+export async function verifySignupOtp(email, otp) {
+  const response = await api.post("auth/register/verify-otp/", {
+    email: email?.trim().toLowerCase(),
+    otp: String(otp).trim(),
+  });
+
+  const access =
+    response.data?.access ||
+    response.data?.data?.tokens?.access ||
+    response.data?.data?.access;
+
+  const refresh =
+    response.data?.refresh ||
+    response.data?.data?.tokens?.refresh ||
+    response.data?.data?.refresh;
+
+  const user = response.data?.data?.user || response.data?.user;
+
+  if (access) localStorage.setItem("access_token", access);
+  if (refresh) localStorage.setItem("refresh_token", refresh);
+  if (user) {
+    localStorage.setItem("user", JSON.stringify(user));
+    localStorage.setItem("auth_user", JSON.stringify(user));
+  }
+
+  window.dispatchEvent(new Event("auth-changed"));
+
+  return {
+    ...response.data,
+    access,
+    refresh,
+    user,
+  };
+}
+
+export async function resendSignupOtp(email) {
+  const response = await api.post("auth/register/resend-otp/", {
+    email: email?.trim().toLowerCase(),
+  });
+  return response.data;
+}
+
 export async function register(dataOrUsername, email, password, password_confirm, role = "admin") {
   let payload = {};
   if (typeof dataOrUsername === "object" && dataOrUsername !== null) {
@@ -93,6 +159,7 @@ export async function register(dataOrUsername, email, password, password_confirm
     refresh,
     user,
   };
+
 }
 
 // ============================================================

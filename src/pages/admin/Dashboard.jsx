@@ -43,7 +43,10 @@ const EMPTY_DATA = {
   recentInvoices: [],
   recentPayments: [],
   recentClients: [],
+  recentVendors: [],
+  urgentItems: [],
 };
+
 
 
 export default function Dashboard() {
@@ -144,7 +147,18 @@ export default function Dashboard() {
           dashboard.recentClients ??
           dashboard.recent_clients ??
           [],
+
+        recentVendors:
+          dashboard.recentVendors ??
+          dashboard.recent_vendors ??
+          [],
+
+        urgentItems:
+          dashboard.urgentItems ??
+          dashboard.urgent_items ??
+          [],
       });
+
 
     } catch (error) {
       console.error(

@@ -257,16 +257,17 @@ export default function WorkDashboardPanels({ data = {}, onRefresh }) {
     toast.success(`Copied ${label} to clipboard!`);
   };
 
-  // Key KPI metrics calculations
-  const collectionRatio = useMemo(() => {
-    if (!data.revenue || data.revenue <= 0) return 88.5;
-    return Number((((data.revenue - (data.outstanding || 0)) / data.revenue) * 100).toFixed(1));
-  }, [data.revenue, data.outstanding]);
+  // Key KPI metrics calculations (100% Dynamic from live DB)
+  const totalRevenue = Number(data.revenue ?? data.total_revenue ?? 0);
+  const outstandingAmount = Number(data.outstanding ?? data.pending_amount ?? 0);
+  const activeInvoicesCount = Number(data.invoices ?? 0);
+  const overdueCount = Number(data.overdueInvoices ?? data.overdue_invoices ?? 0);
 
-  const activeInvoicesCount = data.invoices || 14;
-  const overdueCount = data.overdueInvoices || 3;
-  const totalRevenue = data.revenue || 485000;
-  const outstandingAmount = data.outstanding || 64200;
+  const collectionRatio = useMemo(() => {
+    if (totalRevenue <= 0) return 0;
+    const collected = totalRevenue - outstandingAmount;
+    return Number(((Math.max(0, collected) / totalRevenue) * 100).toFixed(1));
+  }, [totalRevenue, outstandingAmount]);
 
   return (
     <div className="space-y-6">
@@ -300,17 +301,6 @@ export default function WorkDashboardPanels({ data = {}, onRefresh }) {
                   className={isSelected ? "text-blue-400 dark:text-white" : "text-slate-500 group-hover:text-slate-800 dark:text-slate-400 dark:group-hover:text-slate-200"}
                 />
                 <span>{stream.label}</span>
-                {stream.count && (
-                  <span
-                    className={`flex h-4 min-w-[16px] items-center justify-center rounded-full px-1 text-[10px] font-black ${
-                      isSelected
-                        ? "bg-rose-500 text-white"
-                        : "bg-rose-100 text-rose-700 dark:bg-rose-950/80 dark:text-rose-400"
-                    }`}
-                  >
-                    {stream.count}
-                  </span>
-                )}
               </button>
             );
           })}
@@ -350,7 +340,7 @@ export default function WorkDashboardPanels({ data = {}, onRefresh }) {
           <button
             type="button"
             onClick={() => setShowCustomizer(true)}
-            className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+            className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 cursor-pointer"
           >
             <Settings2 size={14} className="text-blue-600 dark:text-blue-400" />
             <span>Customize Panels</span>
@@ -382,6 +372,7 @@ export default function WorkDashboardPanels({ data = {}, onRefresh }) {
               >
                 {panel.id === "urgent_queue" && (
                   <UrgentActionQueuePanel
+                    data={data}
                     density={density}
                     formatCurrency={formatCurrency}
                     copyToClipboard={copyToClipboard}
@@ -419,6 +410,7 @@ export default function WorkDashboardPanels({ data = {}, onRefresh }) {
 
                 {panel.id === "vendor_procurement" && (
                   <VendorProcurementPanel
+                    data={data}
                     density={density}
                     formatCurrency={formatCurrency}
                   />
@@ -431,6 +423,7 @@ export default function WorkDashboardPanels({ data = {}, onRefresh }) {
             );
           })}
         </AnimatePresence>
+
 
         {visiblePanels.length === 0 && (
           <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-slate-300 p-12 text-center dark:border-slate-800">
@@ -627,50 +620,47 @@ export default function WorkDashboardPanels({ data = {}, onRefresh }) {
 }
 
 /* ==========================================================================
-   PANEL 1: URGENT ACTION QUEUE & FOLLOW-UPS
+   PANEL 1: URGENT ACTION QUEUE & FOLLOW-UPS (100% DYNAMIC)
    ========================================================================== */
-function UrgentActionQueuePanel({ density, formatCurrency, copyToClipboard }) {
+function UrgentActionQueuePanel({ data = {}, density, formatCurrency, copyToClipboard }) {
   const [filterType, setFilterType] = useState("all");
 
-  const queueItems = [
-    {
-      id: "urg-1",
-      type: "overdue_invoice",
-      title: "Overdue Invoice: #INV-2026-004",
-      entity: "Nexus Logistics Ltd",
-      amount: 45200,
-      daysOverdue: 14,
-      priority: "high",
-      actionLabel: "Send WhatsApp Reminder",
-      onAction: () => toast.success("WhatsApp payment reminder link dispatched to Nexus Logistics!"),
-    },
-    {
-      id: "urg-2",
-      type: "expiring_quote",
-      title: "Quotation Awaiting Client Approval: #QUO-089",
-      entity: "Acme Enterprises",
-      amount: 185000,
-      daysOverdue: 2,
-      priority: "medium",
-      actionLabel: "Follow Up",
-      onAction: () => toast.success("Follow-up email notification sent to Acme Enterprises!"),
-    },
-    {
-      id: "urg-3",
-      type: "vendor_payable",
-      title: "Vendor Invoice Due in 2 Days: #V-BILL-902",
-      entity: "CloudScale Infrastructure",
-      amount: 28400,
-      daysOverdue: -2,
-      priority: "urgent",
-      actionLabel: "Pay via UPI",
-      onAction: () => toast.success("Opening UPI checkout session for CloudScale!"),
-    },
-  ];
+  const queueItems = useMemo(() => {
+    if (Array.isArray(data.urgentItems) && data.urgentItems.length > 0) {
+      return data.urgentItems;
+    }
+    if (Array.isArray(data.urgent_items) && data.urgent_items.length > 0) {
+      return data.urgent_items;
+    }
+
+    const items = [];
+    const recentInvoices = data.recentInvoices || data.recent_invoices || [];
+
+    recentInvoices.forEach((inv) => {
+      const isOverdue = String(inv.status).toLowerCase() === "overdue";
+      const isSent = String(inv.status).toLowerCase() === "sent" || String(inv.status).toLowerCase() === "partially_paid";
+
+      if (isOverdue || isSent) {
+        items.push({
+          id: `inv-${inv.id}`,
+          type: isOverdue ? "overdue_invoice" : "pending_invoice",
+          title: `Invoice #${inv.invoice_number || inv.id}`,
+          entity: inv.client || "Client Account",
+          amount: Number(inv.total || 0),
+          daysOverdue: isOverdue ? 1 : 0,
+          priority: isOverdue ? "high" : "medium",
+          actionLabel: isOverdue ? "Remind Payment" : "View Invoice",
+          actionLink: `/admin/invoices/${inv.id}`,
+        });
+      }
+    });
+
+    return items;
+  }, [data]);
 
   const filtered = queueItems.filter((item) => {
     if (filterType === "all") return true;
-    return item.type.includes(filterType);
+    return item.type?.includes(filterType);
   });
 
   return (
@@ -690,7 +680,7 @@ function UrgentActionQueuePanel({ density, formatCurrency, copyToClipboard }) {
               </span>
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              High-priority invoices, pending approvals, and urgent payout deadlines
+              High-priority invoices, pending approvals, and payment deadlines
             </p>
           </div>
         </div>
@@ -701,13 +691,12 @@ function UrgentActionQueuePanel({ density, formatCurrency, copyToClipboard }) {
             { id: "all", label: "All" },
             { id: "invoice", label: "Invoices" },
             { id: "quote", label: "Quotes" },
-            { id: "vendor", label: "Vendors" },
           ].map((f) => (
             <button
               key={f.id}
               type="button"
               onClick={() => setFilterType(f.id)}
-              className={`rounded-lg px-2.5 py-1 text-[11px] font-bold transition ${
+              className={`rounded-lg px-2.5 py-1 text-[11px] font-bold transition cursor-pointer ${
                 filterType === f.id
                   ? "bg-rose-500 text-white shadow-sm"
                   : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
@@ -720,60 +709,72 @@ function UrgentActionQueuePanel({ density, formatCurrency, copyToClipboard }) {
       </div>
 
       {/* Queue Items List */}
-      <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {filtered.map((item) => (
-          <div
-            key={item.id}
-            className="flex flex-col justify-between rounded-2xl border border-rose-100 bg-white p-4 shadow-sm transition hover:border-rose-300 hover:shadow-md dark:border-slate-800 dark:bg-slate-900/90 dark:hover:border-slate-700"
-          >
-            <div>
-              <div className="flex items-center justify-between">
-                <span className="rounded-md bg-rose-100 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-rose-800 dark:bg-rose-950/80 dark:text-rose-300">
-                  {item.daysOverdue > 0 ? `${item.daysOverdue}d Overdue` : "Due Soon"}
-                </span>
-                <span className="font-mono text-xs font-extrabold text-slate-900 dark:text-white">
-                  {formatCurrency(item.amount)}
-                </span>
+      {filtered.length > 0 ? (
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {filtered.map((item) => (
+            <div
+              key={item.id}
+              className="flex flex-col justify-between rounded-2xl border border-rose-100 bg-white p-4 shadow-sm transition hover:border-rose-300 hover:shadow-md dark:border-slate-800 dark:bg-slate-900/90 dark:hover:border-slate-700"
+            >
+              <div>
+                <div className="flex items-center justify-between">
+                  <span className="rounded-md bg-rose-100 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-rose-800 dark:bg-rose-950/80 dark:text-rose-300">
+                    {item.daysOverdue > 0 ? `${item.daysOverdue}d Overdue` : "Pending Action"}
+                  </span>
+                  <span className="font-mono text-xs font-extrabold text-slate-900 dark:text-white">
+                    {formatCurrency(item.amount || 0)}
+                  </span>
+                </div>
+
+                <h4 className="mt-2 text-xs font-bold text-slate-900 line-clamp-1 dark:text-slate-100">
+                  {item.title}
+                </h4>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                  Client: <span className="font-semibold text-slate-700 dark:text-slate-300">{item.entity}</span>
+                </p>
               </div>
 
-              <h4 className="mt-2 text-xs font-bold text-slate-900 line-clamp-1 dark:text-slate-100">
-                {item.title}
-              </h4>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                Entity: <span className="font-semibold text-slate-700 dark:text-slate-300">{item.entity}</span>
-              </p>
-            </div>
+              <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 dark:border-slate-800">
+                <Link
+                  to={item.actionLink || `/admin/invoices`}
+                  className="flex items-center gap-1.5 rounded-xl bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-700 hover:bg-rose-100 dark:bg-rose-950/60 dark:text-rose-300 dark:hover:bg-rose-900/60 transition"
+                >
+                  <Zap size={13} />
+                  <span>{item.actionLabel || "View Details"}</span>
+                </Link>
 
-            <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 dark:border-slate-800">
-              <button
-                type="button"
-                onClick={item.onAction}
-                className="flex items-center gap-1.5 rounded-xl bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-700 hover:bg-rose-100 dark:bg-rose-950/60 dark:text-rose-300 dark:hover:bg-rose-900/60 transition"
-              >
-                <Zap size={13} />
-                <span>{item.actionLabel}</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => copyToClipboard(`Invoice due: ${formatCurrency(item.amount)} for ${item.entity}`, "Reminder details")}
-                className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200"
-                title="Copy details"
-              >
-                <Copy size={13} />
-              </button>
+                <button
+                  type="button"
+                  onClick={() => copyToClipboard(`Invoice: ${formatCurrency(item.amount || 0)} for ${item.entity}`, "Reminder details")}
+                  className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200 cursor-pointer"
+                  title="Copy details"
+                >
+                  <Copy size={13} />
+                </button>
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      ) : (
+        <div className="mt-4 flex flex-col items-center justify-center rounded-2xl border border-dashed border-rose-200/80 p-8 text-center dark:border-slate-800">
+          <CheckCircle2 size={32} className="text-emerald-500" />
+          <h4 className="mt-2 text-sm font-bold text-slate-800 dark:text-slate-200">
+            No Urgent Issues Pending
+          </h4>
+          <p className="mt-1 max-w-sm text-xs text-slate-500 dark:text-slate-400">
+            All client invoices and payments are currently healthy. Overdue items will automatically appear here.
+          </p>
+        </div>
+      )}
     </div>
   );
 }
 
 /* ==========================================================================
-   PANEL 2: LIVE METRICS & FINANCIAL HEALTH
+   PANEL 2: LIVE METRICS & FINANCIAL HEALTH (100% DYNAMIC)
    ========================================================================== */
 function LiveMetricsPanel({
+  data = {},
   density,
   formatCurrency,
   collectionRatio,
@@ -782,6 +783,8 @@ function LiveMetricsPanel({
   activeInvoicesCount,
   overdueCount,
 }) {
+  const paidCount = Number(data.paidInvoices ?? data.paid_invoices ?? 0);
+
   return (
     <div className="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-sm dark:border-slate-800/80 dark:bg-slate-900">
       <div className="flex items-center justify-between border-b border-slate-100 pb-4 dark:border-slate-800">
@@ -794,7 +797,7 @@ function LiveMetricsPanel({
               Financial Health & Collection Ratios
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              Live operational throughput and realization speed
+              Live operational throughput from real transactions
             </p>
           </div>
         </div>
@@ -812,7 +815,7 @@ function LiveMetricsPanel({
         {/* Metric 1 */}
         <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-4 dark:border-slate-800 dark:bg-slate-950/60">
           <div className="flex items-center justify-between text-slate-500">
-            <span className="text-xs font-bold uppercase tracking-wider">Gross Billed</span>
+            <span className="text-xs font-bold uppercase tracking-wider">Gross Revenue</span>
             <IndianRupee size={15} className="text-blue-500" />
           </div>
           <div className="mt-2 text-xl font-black text-slate-900 dark:text-white">
@@ -820,7 +823,7 @@ function LiveMetricsPanel({
           </div>
           <div className="mt-1 flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
             <TrendingUp size={13} />
-            <span>+14.2% vs last month</span>
+            <span>{paidCount} paid invoices completed</span>
           </div>
         </div>
 
@@ -834,7 +837,7 @@ function LiveMetricsPanel({
             {formatCurrency(outstandingAmount)}
           </div>
           <div className="mt-1 flex items-center gap-1 text-[11px] font-semibold text-amber-600">
-            <span>{overdueCount} invoices past due</span>
+            <span>{overdueCount} overdue invoices</span>
           </div>
         </div>
 
@@ -850,7 +853,7 @@ function LiveMetricsPanel({
           {/* Mini progress bar */}
           <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
             <div
-              className="h-full bg-gradient-to-r from-blue-500 to-emerald-500"
+              className="h-full bg-gradient-to-r from-blue-500 to-emerald-500 transition-all duration-500"
               style={{ width: `${Math.min(collectionRatio, 100)}%` }}
             />
           </div>
@@ -859,15 +862,15 @@ function LiveMetricsPanel({
         {/* Metric 4 */}
         <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-4 dark:border-slate-800 dark:bg-slate-950/60">
           <div className="flex items-center justify-between text-slate-500">
-            <span className="text-xs font-bold uppercase tracking-wider">Avg Settlement</span>
-            <Zap size={15} className="text-purple-500" />
+            <span className="text-xs font-bold uppercase tracking-wider">Total Invoices</span>
+            <FileText size={15} className="text-purple-500" />
           </div>
           <div className="mt-2 text-xl font-black text-slate-900 dark:text-white">
-            2.4 Days
+            {activeInvoicesCount}
           </div>
           <div className="mt-1 flex items-center gap-1 text-[11px] font-semibold text-purple-600 dark:text-purple-400">
             <Sparkles size={12} />
-            <span>Instant UPI reconciliation</span>
+            <span>Active billing pipeline</span>
           </div>
         </div>
       </div>
@@ -876,19 +879,16 @@ function LiveMetricsPanel({
 }
 
 /* ==========================================================================
-   PANEL 3: INVOICING & BILLING HUB
+   PANEL 3: INVOICING & BILLING HUB (100% DYNAMIC)
    ========================================================================== */
-function InvoicingHubPanel({ data, density, formatCurrency }) {
+function InvoicingHubPanel({ data = {}, density, formatCurrency }) {
   const [activeTab, setActiveTab] = useState("all");
 
-  const sampleInvoices = data.recentInvoices?.length > 0 ? data.recentInvoices : [
-    { id: "101", invoice_number: "INV-2026-001", client: "Acme Technologies", total: 48500, status: "paid", date: "Today" },
-    { id: "102", invoice_number: "INV-2026-002", client: "Zenith Digital Agency", total: 112000, status: "partially_paid", date: "Yesterday" },
-    { id: "103", invoice_number: "INV-2026-003", client: "Nexus Logistics Ltd", total: 85300, status: "sent", date: "2 days ago" },
-    { id: "104", invoice_number: "INV-2026-004", client: "Starlight Media Corp", total: 32000, status: "overdue", date: "5 days ago" },
-  ];
+  const invoices = useMemo(() => {
+    return data.recentInvoices || data.recent_invoices || [];
+  }, [data]);
 
-  const filteredInvoices = sampleInvoices.filter((inv) => {
+  const filteredInvoices = invoices.filter((inv) => {
     if (activeTab === "all") return true;
     return String(inv.status).toLowerCase().includes(activeTab);
   });
@@ -905,7 +905,7 @@ function InvoicingHubPanel({ data, density, formatCurrency }) {
               Invoicing & Billing Pipeline
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              Manage GST invoices, monitor statuses, and convert quotes
+              Real invoices, payment statuses, and quick creation
             </p>
           </div>
         </div>
@@ -917,7 +917,7 @@ function InvoicingHubPanel({ data, density, formatCurrency }) {
                 key={status}
                 type="button"
                 onClick={() => setActiveTab(status)}
-                className={`rounded-lg px-2.5 py-1 text-[11px] font-bold capitalize transition ${
+                className={`rounded-lg px-2.5 py-1 text-[11px] font-bold capitalize transition cursor-pointer ${
                   activeTab === status
                     ? "bg-white text-slate-900 shadow-sm dark:bg-slate-800 dark:text-white"
                     : "text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
@@ -939,58 +939,75 @@ function InvoicingHubPanel({ data, density, formatCurrency }) {
       </div>
 
       {/* Invoice Rows */}
-      <div className="mt-4 divide-y divide-slate-100 dark:divide-slate-800/80">
-        {filteredInvoices.map((inv) => (
-          <div
-            key={inv.id}
-            className="flex items-center justify-between py-3 transition hover:bg-slate-50/50 dark:hover:bg-slate-800/30 px-2 rounded-xl"
+      {filteredInvoices.length > 0 ? (
+        <div className="mt-4 divide-y divide-slate-100 dark:divide-slate-800/80">
+          {filteredInvoices.map((inv) => (
+            <div
+              key={inv.id}
+              className="flex items-center justify-between py-3 transition hover:bg-slate-50/50 dark:hover:bg-slate-800/30 px-2 rounded-xl"
+            >
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 font-mono text-xs font-bold text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                  <FileText size={16} />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-slate-900 dark:text-slate-100">
+                    {inv.invoice_number || `INV-${inv.id}`}
+                  </p>
+                  <p className="text-[11px] text-slate-400">
+                    {inv.client || "Client"} {inv.due_date ? `• Due ${inv.due_date}` : ""}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-4">
+                <div className="text-right">
+                  <p className="text-xs font-bold text-slate-900 dark:text-white">
+                    {formatCurrency(inv.total || 0)}
+                  </p>
+                  <InvoiceStatusBadge status={inv.status} />
+                </div>
+
+                <Link
+                  to={`/admin/invoices/${inv.id}`}
+                  className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+                  title="View Invoice"
+                >
+                  <ArrowRight size={14} />
+                </Link>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="mt-4 flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 p-8 text-center dark:border-slate-800">
+          <FileText size={32} className="text-slate-400" />
+          <h4 className="mt-2 text-sm font-bold text-slate-800 dark:text-slate-200">
+            No Invoices Found
+          </h4>
+          <p className="mt-1 max-w-sm text-xs text-slate-500 dark:text-slate-400">
+            Create your first invoice to begin tracking billing statuses and client dues.
+          </p>
+          <Link
+            to="/admin/invoices/add"
+            className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-blue-700 transition"
           >
-            <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 font-mono text-xs font-bold text-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                <FileText size={16} />
-              </div>
-              <div>
-                <p className="text-xs font-bold text-slate-900 dark:text-slate-100">
-                  {inv.invoice_number || `INV-${inv.id}`}
-                </p>
-                <p className="text-[11px] text-slate-400">
-                  {inv.client} {inv.date ? `• ${inv.date}` : ""}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-4">
-              <div className="text-right">
-                <p className="text-xs font-bold text-slate-900 dark:text-white">
-                  {formatCurrency(inv.total || 0)}
-                </p>
-                <InvoiceStatusBadge status={inv.status} />
-              </div>
-
-              <Link
-                to={`/admin/invoices/${inv.id}`}
-                className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200"
-                title="View Invoice"
-              >
-                <ArrowRight size={14} />
-              </Link>
-            </div>
-          </div>
-        ))}
-      </div>
+            <Plus size={14} />
+            <span>Create Invoice</span>
+          </Link>
+        </div>
+      )}
     </div>
   );
 }
 
 /* ==========================================================================
-   PANEL 5: CLIENT CRM & ACCOUNTS RECEIVABLE
+   PANEL 5: CLIENT CRM & ACCOUNTS RECEIVABLE (100% DYNAMIC)
    ========================================================================== */
-function ClientCrmPanel({ data, density, formatCurrency }) {
-  const clients = data.recentClients?.length > 0 ? data.recentClients : [
-    { id: 1, name: "Acme Technologies", email: "contact@acme.com", totalBilled: 145000, status: "Active" },
-    { id: 2, name: "Zenith Digital Agency", email: "billing@zenith.io", totalBilled: 98000, status: "Active" },
-    { id: 3, name: "Nexus Logistics Ltd", email: "finance@nexus.com", totalBilled: 85300, status: "Pending Due" },
-  ];
+function ClientCrmPanel({ data = {}, density, formatCurrency }) {
+  const clients = useMemo(() => {
+    return data.recentClients || data.recent_clients || [];
+  }, [data]);
 
   return (
     <div className="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-sm dark:border-slate-800/80 dark:bg-slate-900">
@@ -1018,56 +1035,74 @@ function ClientCrmPanel({ data, density, formatCurrency }) {
         </Link>
       </div>
 
-      <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {clients.map((client) => (
-          <div
-            key={client.id}
-            className="flex flex-col justify-between rounded-2xl border border-slate-100 bg-slate-50/60 p-4 dark:border-slate-800 dark:bg-slate-950/60"
+      {clients.length > 0 ? (
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {clients.map((client) => (
+            <div
+              key={client.id}
+              className="flex flex-col justify-between rounded-2xl border border-slate-100 bg-slate-50/60 p-4 dark:border-slate-800 dark:bg-slate-950/60"
+            >
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-xs font-bold text-white uppercase">
+                  {(client.name || "CL").slice(0, 2)}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-xs font-bold text-slate-900 dark:text-slate-100">
+                    {client.name}
+                  </p>
+                  <p className="truncate text-[11px] text-slate-400">
+                    {client.email || client.company_name || "Client Account"}
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-4 flex items-center justify-between border-t border-slate-200/60 pt-3 dark:border-slate-800">
+                <div>
+                  <span className="text-[10px] uppercase tracking-wider text-slate-400">Total Billed</span>
+                  <p className="text-xs font-black text-slate-900 dark:text-white">
+                    {formatCurrency(client.total_billed || client.totalBilled || 0)}
+                  </p>
+                </div>
+
+                <Link
+                  to={`/admin/clients/${client.id}`}
+                  className="rounded-xl bg-white px-3 py-1.5 text-xs font-bold text-slate-700 shadow-sm hover:bg-slate-50 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+                >
+                  Profile
+                </Link>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="mt-4 flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 p-8 text-center dark:border-slate-800">
+          <Users size={32} className="text-slate-400" />
+          <h4 className="mt-2 text-sm font-bold text-slate-800 dark:text-slate-200">
+            No Clients Registered Yet
+          </h4>
+          <p className="mt-1 max-w-sm text-xs text-slate-500 dark:text-slate-400">
+            Add client companies or individuals to generate proposals and invoices.
+          </p>
+          <Link
+            to="/admin/clients/add"
+            className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-sky-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-sky-700 transition"
           >
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-xs font-bold text-white">
-                {client.name.slice(0, 2).toUpperCase()}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-xs font-bold text-slate-900 dark:text-slate-100">
-                  {client.name}
-                </p>
-                <p className="truncate text-[11px] text-slate-400">
-                  {client.email}
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-4 flex items-center justify-between border-t border-slate-200/60 pt-3 dark:border-slate-800">
-              <div>
-                <span className="text-[10px] uppercase tracking-wider text-slate-400">Total Billed</span>
-                <p className="text-xs font-black text-slate-900 dark:text-white">
-                  {formatCurrency(client.totalBilled || 45000)}
-                </p>
-              </div>
-
-              <Link
-                to={`/admin/clients/${client.id}`}
-                className="rounded-xl bg-white px-3 py-1.5 text-xs font-bold text-slate-700 shadow-sm hover:bg-slate-50 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
-              >
-                Profile
-              </Link>
-            </div>
-          </div>
-        ))}
-      </div>
+            <Plus size={14} />
+            <span>Add Client</span>
+          </Link>
+        </div>
+      )}
     </div>
   );
 }
 
 /* ==========================================================================
-   PANEL 6: VENDOR PROCUREMENT & ACCOUNTS PAYABLE
+   PANEL 6: VENDOR PROCUREMENT & ACCOUNTS PAYABLE (100% DYNAMIC)
    ========================================================================== */
-function VendorProcurementPanel({ density, formatCurrency }) {
-  const vendors = [
-    { id: 1, name: "Apex Raw Materials Ltd", category: "Raw Materials", dueAmount: 32000, terms: "Net 30" },
-    { id: 2, name: "CloudScale Hosting Solutions", category: "IT & Cloud", dueAmount: 18400, terms: "Due on Receipt" },
-  ];
+function VendorProcurementPanel({ data = {}, density, formatCurrency }) {
+  const vendors = useMemo(() => {
+    return data.recentVendors || data.recent_vendors || [];
+  }, [data]);
 
   return (
     <div className="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-sm dark:border-slate-800/80 dark:bg-slate-900">
@@ -1095,45 +1130,61 @@ function VendorProcurementPanel({ density, formatCurrency }) {
         </Link>
       </div>
 
-      <div className="mt-4 grid gap-3 sm:grid-cols-2">
-        {vendors.map((vendor) => (
-          <div
-            key={vendor.id}
-            className="flex items-center justify-between rounded-2xl border border-slate-100 bg-slate-50/60 p-4 dark:border-slate-800 dark:bg-slate-950/60"
-          >
-            <div>
-              <div className="flex items-center gap-2">
-                <p className="text-xs font-bold text-slate-900 dark:text-slate-100">
-                  {vendor.name}
+      {vendors.length > 0 ? (
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          {vendors.map((vendor) => (
+            <div
+              key={vendor.id}
+              className="flex items-center justify-between rounded-2xl border border-slate-100 bg-slate-50/60 p-4 dark:border-slate-800 dark:bg-slate-950/60"
+            >
+              <div>
+                <div className="flex items-center gap-2">
+                  <p className="text-xs font-bold text-slate-900 dark:text-slate-100">
+                    {vendor.name}
+                  </p>
+                  <span className="rounded-md bg-purple-100 px-2 py-0.5 text-[10px] font-bold text-purple-700 dark:bg-purple-950/80 dark:text-purple-300">
+                    {vendor.category || "Supplier"}
+                  </span>
+                </div>
+                <p className="mt-1 text-[11px] text-slate-400">
+                  Email: <span className="font-semibold text-slate-600 dark:text-slate-300">{vendor.email || "N/A"}</span>
                 </p>
-                <span className="rounded-md bg-purple-100 px-2 py-0.5 text-[10px] font-bold text-purple-700 dark:bg-purple-950/80 dark:text-purple-300">
-                  {vendor.category}
-                </span>
               </div>
-              <p className="mt-1 text-[11px] text-slate-400">
-                Payment Terms: <span className="font-semibold text-slate-600 dark:text-slate-300">{vendor.terms}</span>
-              </p>
-            </div>
 
-            <div className="text-right">
-              <p className="text-xs font-black text-slate-900 dark:text-white">
-                {formatCurrency(vendor.dueAmount)}
-              </p>
-              <button
-                type="button"
-                onClick={() => toast.success(`Initiated payout flow for ${vendor.name}`)}
-                className="mt-1 inline-flex items-center gap-1 text-[11px] font-bold text-purple-600 hover:underline dark:text-purple-400"
-              >
-                <span>Pay Out</span>
-                <ArrowRight size={11} />
-              </button>
+              <div className="text-right">
+                <Link
+                  to={`/admin/vendors/${vendor.id}`}
+                  className="mt-1 inline-flex items-center gap-1 text-[11px] font-bold text-purple-600 hover:underline dark:text-purple-400"
+                >
+                  <span>View Details</span>
+                  <ArrowRight size={11} />
+                </Link>
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      ) : (
+        <div className="mt-4 flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 p-8 text-center dark:border-slate-800">
+          <Building2 size={32} className="text-slate-400" />
+          <h4 className="mt-2 text-sm font-bold text-slate-800 dark:text-slate-200">
+            No Vendors Registered Yet
+          </h4>
+          <p className="mt-1 max-w-sm text-xs text-slate-500 dark:text-slate-400">
+            Add suppliers and service providers to track procurement costs.
+          </p>
+          <Link
+            to="/admin/vendors/add"
+            className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-purple-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-purple-700 transition"
+          >
+            <Plus size={14} />
+            <span>Add Vendor</span>
+          </Link>
+        </div>
+      )}
     </div>
   );
 }
+
 
 /* ==========================================================================
    PANEL 7: QUICK OPERATIONAL LAUNCHER
