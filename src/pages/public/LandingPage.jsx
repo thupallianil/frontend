@@ -82,76 +82,10 @@ export default function LandingPage() {
   }, []);
 
   // ============================================================
-  // DYNAMIC INTERACTIVE INVOICE PLAYGROUND (LIVE DEMO)
-  // ============================================================
-  const [demoClient, setDemoClient] = useState("Acme Innovations Pvt Ltd");
-  const [demoCurrency, setDemoCurrency] = useState("₹");
-  const [demoTaxRate, setDemoTaxRate] = useState(18);
-  const [demoItems, setDemoItems] = useState([
-    { id: 1, name: "Web Application & Cloud Architecture", qty: 1, rate: 45000 },
-    { id: 2, name: "API & Payment Gateway Integration", qty: 1, rate: 18000 },
-  ]);
-  const [demoPaid, setDemoPaid] = useState(false);
-
-  const demoSubtotal = useMemo(() => {
-    return demoItems.reduce((sum, item) => sum + (Number(item.qty) || 0) * (Number(item.rate) || 0), 0);
-  }, [demoItems]);
-
-  const demoTaxAmount = useMemo(() => {
-    return Math.round((demoSubtotal * Number(demoTaxRate)) / 100);
-  }, [demoSubtotal, demoTaxRate]);
-
-  const demoTotal = useMemo(() => {
-    return demoSubtotal + demoTaxAmount;
-  }, [demoSubtotal, demoTaxAmount]);
-
-  const handleAddDemoItem = () => {
-    setDemoItems([
-      ...demoItems,
-      { id: Date.now(), name: "Professional Consultancy / Support", qty: 1, rate: 5000 },
-    ]);
-  };
-
-  const handleRemoveDemoItem = (id) => {
-    if (demoItems.length > 1) {
-      setDemoItems(demoItems.filter((i) => i.id !== id));
-    }
-  };
-
-  const handleUpdateDemoItem = (id, field, value) => {
-    setDemoItems(
-      demoItems.map((item) => (item.id === id ? { ...item, [field]: value } : item))
-    );
-  };
-
-  const handleSimulatePayment = () => {
-    setDemoPaid(true);
-    toast.success("Payment Received! Dynamic Tax Invoice & Receipt marked as PAID.", {
-      icon: "🎉",
-      duration: 4000,
-    });
-    setTimeout(() => setDemoPaid(false), 5000);
-  };
-
-  // ============================================================
   // INTERACTIVE TABBED STUDIO & WORKSPACE SHOWCASE
   // ============================================================
   const [activeTab, setActiveTab] = useState("invoicing");
   const [activeWorkRole, setActiveWorkRole] = useState("enterprise");
-  const [reminderSent, setReminderSent] = useState(false);
-  const [quoteConverted, setQuoteConverted] = useState(false);
-
-  // ============================================================
-  // ROI CALCULATOR STATE
-  // ============================================================
-  const [roiInvoices, setRoiInvoices] = useState(40);
-  const [roiAvgAmount, setRoiAvgAmount] = useState(25000);
-  const [roiHourlyRate, setRoiHourlyRate] = useState(800);
-
-  const calculatedHoursSaved = Math.round(roiInvoices * 0.6);
-  const calculatedDirectSavings = Math.round(calculatedHoursSaved * roiHourlyRate);
-  const calculatedEarlyCollection = Math.round((roiInvoices * roiAvgAmount * 0.008));
-  const totalFinancialBenefit = calculatedDirectSavings + calculatedEarlyCollection;
 
   // ============================================================
   // DYNAMIC PRICING SUITE STATE
@@ -162,6 +96,7 @@ export default function LandingPage() {
   const [pricingInvoicesVolume, setPricingInvoicesVolume] = useState(75);
   const [pricingTeamSeats, setPricingTeamSeats] = useState(3);
   const [selectedAddons, setSelectedAddons] = useState(["whatsapp", "multi_gateway"]);
+
 
   // ============================================================
   // FAQ INTERACTIVE FILTER & ACCORDION
@@ -252,22 +187,17 @@ export default function LandingPage() {
 
           {/* Desktop Nav Links */}
           <nav className="hidden md:flex items-center gap-8 text-sm font-semibold text-slate-600 dark:text-slate-300">
-            <a href="#playground" className="hover:text-blue-600 dark:hover:text-blue-400 transition">
-              Live Playground
-            </a>
             <a href="#showcase" className="hover:text-blue-600 dark:hover:text-blue-400 transition">
               Modules
             </a>
-            <a href="#calculator" className="hover:text-blue-600 dark:hover:text-blue-400 transition">
-              ROI Calculator
-            </a>
             <a href="#pricing" className="hover:text-blue-600 dark:hover:text-blue-400 transition">
-              Dynamic Pricing
+              Pricing
             </a>
             <a href="#faq" className="hover:text-blue-600 dark:hover:text-blue-400 transition">
               FAQ
             </a>
           </nav>
+
 
           {/* Action CTAs & Theme Toggle */}
           <div className="flex items-center gap-3">
@@ -369,11 +299,11 @@ export default function LandingPage() {
               </button>
 
               <a
-                href="#playground"
+                href="#showcase"
                 className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-7 py-3.5 text-base font-bold text-slate-800 shadow-xs hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 transition"
               >
-                <Zap size={17} className="text-amber-500" />
-                <span>Try Live Interactive Demo</span>
+                <Layers size={17} className="text-blue-600" />
+                <span>Explore Modules</span>
               </a>
             </motion.div>
 
@@ -436,251 +366,14 @@ export default function LandingPage() {
       </section>
 
       {/* ============================================================
-          SECTION 1: LIVE INTERACTIVE INVOICE PLAYGROUND (100% DYNAMIC)
-      ============================================================ */}
-      <section id="playground" className="py-20 border-t border-slate-200/80 bg-white dark:border-slate-800/80 dark:bg-slate-900/60">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          
-          <div className="text-center max-w-3xl mx-auto space-y-4">
-            <div className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3.5 py-1 text-xs font-bold text-blue-700 dark:bg-blue-500/10 dark:text-blue-400 border border-blue-200/60 dark:border-blue-500/20">
-              <Zap size={14} className="text-amber-500" />
-              <span>Interactive Live Sandbox</span>
-            </div>
-            <h2 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100 sm:text-4xl">
-              Experience the Live Invoice Engine
-            </h2>
-            <p className="text-sm text-slate-600 dark:text-slate-400">
-              Type custom items, adjust taxes, change currencies, and test instant dynamic UPI settlements in real time.
-            </p>
-          </div>
-
-          {/* Interactive Playground Sandbox Card */}
-          <div className="mt-12 max-w-5xl mx-auto rounded-3xl border border-slate-200 bg-slate-50/70 p-6 shadow-xl dark:border-slate-800 dark:bg-slate-900/90 lg:p-8">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-              
-              {/* Left Column: Live Configurator */}
-              <div className="lg:col-span-7 space-y-5">
-                <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
-                  <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                    <Sliders size={16} className="text-blue-600" />
-                    <span>Live Invoice Builder</span>
-                  </h3>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setDemoItems([
-                        { id: 1, name: "Full Stack SaaS Development", qty: 1, rate: 60000 },
-                        { id: 2, name: "UI/UX System & Branding", qty: 1, rate: 20000 },
-                      ]);
-                      setDemoTaxRate(18);
-                      setDemoClient("Apex Global Solutions Ltd");
-                    }}
-                    className="text-xs text-blue-600 hover:text-blue-700 font-semibold flex items-center gap-1 cursor-pointer"
-                  >
-                    <RotateCcw size={12} />
-                    <span>Load Preset</span>
-                  </button>
-                </div>
-
-                {/* Client Name & Currency Selection */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div className="sm:col-span-2 space-y-1">
-                    <label className="text-[11px] font-bold text-slate-600 dark:text-slate-300">Client Name</label>
-                    <input
-                      type="text"
-                      value={demoClient}
-                      onChange={(e) => setDemoClient(e.target.value)}
-                      className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-[11px] font-bold text-slate-600 dark:text-slate-300">Currency</label>
-                    <select
-                      value={demoCurrency}
-                      onChange={(e) => setDemoCurrency(e.target.value)}
-                      className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                    >
-                      <option value="₹">₹ INR (Rupee)</option>
-                      <option value="$">$ USD (Dollar)</option>
-                      <option value="€">€ EUR (Euro)</option>
-                      <option value="£">£ GBP (Pound)</option>
-                      <option value="AED ">AED (Dirham)</option>
-                    </select>
-                  </div>
-                </div>
-
-                {/* Live Items Table */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <label className="text-[11px] font-bold text-slate-600 dark:text-slate-300">Line Items & Services</label>
-                    <span className="text-[10px] text-slate-400">Dynamic Calculation</span>
-                  </div>
-
-                  <div className="space-y-2">
-                    {demoItems.map((item) => (
-                      <div key={item.id} className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white p-2.5 dark:border-slate-700 dark:bg-slate-800">
-                        <input
-                          type="text"
-                          value={item.name}
-                          onChange={(e) => handleUpdateDemoItem(item.id, "name", e.target.value)}
-                          placeholder="Service description"
-                          className="flex-1 text-xs font-medium bg-transparent focus:outline-none text-slate-900 dark:text-white"
-                        />
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          <input
-                            type="number"
-                            min="1"
-                            value={item.qty}
-                            onChange={(e) => handleUpdateDemoItem(item.id, "qty", Math.max(1, Number(e.target.value)))}
-                            className="w-12 rounded-lg border border-slate-200 bg-slate-50 px-1.5 py-1 text-center text-xs font-bold dark:border-slate-600 dark:bg-slate-700 text-slate-900 dark:text-white"
-                            title="Quantity"
-                          />
-                          <div className="flex items-center rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 dark:border-slate-600 dark:bg-slate-700">
-                            <span className="text-[11px] text-slate-400 mr-1">{demoCurrency}</span>
-                            <input
-                              type="number"
-                              min="0"
-                              step="500"
-                              value={item.rate}
-                              onChange={(e) => handleUpdateDemoItem(item.id, "rate", Math.max(0, Number(e.target.value)))}
-                              className="w-20 text-xs font-bold bg-transparent focus:outline-none text-slate-900 dark:text-white text-right"
-                            />
-                          </div>
-                          {demoItems.length > 1 && (
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveDemoItem(item.id)}
-                              className="text-slate-400 hover:text-red-500 p-1 transition cursor-pointer"
-                              title="Delete Item"
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={handleAddDemoItem}
-                    className="mt-1 inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:text-blue-700 dark:text-blue-400 cursor-pointer"
-                  >
-                    <Plus size={14} />
-                    <span>Add Another Line Item</span>
-                  </button>
-                </div>
-
-                {/* Tax Rate Slider */}
-                <div className="rounded-2xl border border-slate-200 bg-white p-3.5 dark:border-slate-700 dark:bg-slate-800 space-y-2">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-bold text-slate-700 dark:text-slate-300">GST / Tax Matrix</span>
-                    <span className="font-black text-blue-600 dark:text-blue-400">{demoTaxRate}% ({demoCurrency} {demoTaxAmount.toLocaleString()})</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="0"
-                    max="28"
-                    step="1"
-                    value={demoTaxRate}
-                    onChange={(e) => setDemoTaxRate(Number(e.target.value))}
-                    className="w-full accent-blue-600 h-2 bg-slate-200 dark:bg-slate-700 rounded-lg cursor-pointer"
-                  />
-                  <div className="flex justify-between text-[10px] text-slate-400 font-semibold">
-                    <span>0% (Exempt)</span>
-                    <span>5% (Basic)</span>
-                    <span>12% (Standard)</span>
-                    <span>18% (Services)</span>
-                    <span>28% (Luxury)</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Right Column: Live Generated Preview & Dynamic QR Code */}
-              <div className="lg:col-span-5 rounded-3xl border border-slate-200 bg-white p-6 shadow-xl dark:border-slate-700 dark:bg-slate-800 space-y-5">
-                <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-700 pb-3">
-                  <div>
-                    <span className="font-mono text-[10px] font-black uppercase text-blue-600 dark:text-blue-400">
-                      #INV-2026-LIVE
-                    </span>
-                    <p className="text-xs font-bold text-slate-900 dark:text-white truncate max-w-[180px]">
-                      {demoClient || "Client Name"}
-                    </p>
-                  </div>
-                  <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider ${demoPaid ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300" : "bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300"}`}>
-                    {demoPaid ? "✓ PAID" : "PENDING DUE"}
-                  </span>
-                </div>
-
-                {/* Subtotal & Total Display */}
-                <div className="space-y-1.5 text-xs">
-                  <div className="flex justify-between text-slate-500 dark:text-slate-400">
-                    <span>Subtotal:</span>
-                    <span className="font-semibold text-slate-900 dark:text-white">{demoCurrency} {demoSubtotal.toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between text-slate-500 dark:text-slate-400">
-                    <span>GST ({demoTaxRate}%):</span>
-                    <span className="font-semibold text-slate-900 dark:text-white">{demoCurrency} {demoTaxAmount.toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between border-t border-slate-100 dark:border-slate-700 pt-2 text-sm font-black text-slate-900 dark:text-white">
-                    <span>Total Amount:</span>
-                    <span className="text-lg text-blue-600 dark:text-blue-400">{demoCurrency} {demoTotal.toLocaleString()}</span>
-                  </div>
-                </div>
-
-                {/* Instant Online Payment Methods Card */}
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-center dark:border-slate-700 dark:bg-slate-900/60 space-y-3">
-                  <div className="flex items-center justify-center gap-2 text-slate-800 dark:text-slate-200">
-                    <CreditCard size={18} className="text-blue-600 dark:text-blue-400" />
-                    <span className="text-xs font-bold">Multi-Gateway Online Settlement</span>
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-2">
-                    <div className="rounded-xl border border-slate-200 bg-white p-2.5 text-center dark:border-slate-700 dark:bg-slate-800">
-                      <p className="text-[11px] font-bold text-slate-900 dark:text-white">Cards</p>
-                      <p className="text-[9px] text-slate-400">Visa / Master / Amex</p>
-                    </div>
-                    <div className="rounded-xl border border-slate-200 bg-white p-2.5 text-center dark:border-slate-700 dark:bg-slate-800">
-                      <p className="text-[11px] font-bold text-blue-600 dark:text-blue-400">Razorpay</p>
-                      <p className="text-[9px] text-slate-400">Instant Checkout</p>
-                    </div>
-                    <div className="rounded-xl border border-slate-200 bg-white p-2.5 text-center dark:border-slate-700 dark:bg-slate-800">
-                      <p className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400">NetBanking</p>
-                      <p className="text-[9px] text-slate-400">50+ Major Banks</p>
-                    </div>
-                  </div>
-
-                  <p className="text-[10px] text-slate-500 dark:text-slate-400">
-                    256-Bit SSL Encrypted • Instant automatic invoice reconciliation
-                  </p>
-                </div>
-
-                {/* Simulate Payment Trigger */}
-                <button
-                  type="button"
-                  onClick={handleSimulatePayment}
-                  className="w-full flex items-center justify-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 py-3 text-xs font-bold text-white shadow-md transition active:scale-[0.98] cursor-pointer"
-                >
-                  <CheckCircle2 size={16} />
-                  <span>Simulate Instant Client Settlement</span>
-                </button>
-              </div>
-
-            </div>
-          </div>
-
-        </div>
-      </section>
-
-      {/* ============================================================
-          SECTION 2: INTERACTIVE PRODUCT SHOWCASE TABS
+          SECTION 1: PRODUCT SHOWCASE TABS
       ============================================================ */}
       <section id="showcase" className="py-20 border-t border-slate-200/80 bg-slate-50/50 dark:border-slate-800/80 dark:bg-slate-900/40">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           
           <div className="text-center max-w-3xl mx-auto space-y-4">
             <div className="inline-flex items-center gap-2 rounded-full bg-indigo-50 px-3.5 py-1 text-xs font-bold text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-400 border border-indigo-200/60 dark:border-indigo-500/20">
+
               <Layers size={14} className="text-indigo-600" />
               <span>Full Operational Suite</span>
             </div>
@@ -782,22 +475,16 @@ export default function LandingPage() {
                     <div className="rounded-2xl border border-emerald-200 bg-emerald-50/50 p-4 dark:border-emerald-900/40 dark:bg-emerald-950/20">
                       <div className="flex items-center justify-between">
                         <span className="font-mono text-xs font-bold text-emerald-800 dark:text-emerald-300">QUO-2026-084</span>
-                        <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300">{quoteConverted ? "✓ Converted to Invoice" : "Client Approved"}</span>
+                        <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300">Client Approved</span>
                       </div>
                       <h5 className="mt-2 font-bold text-xs text-slate-900 dark:text-slate-100">Enterprise Cloud Architecture Migration</h5>
                       <p className="mt-1 text-[11px] text-slate-500">Client: Starlight Corp</p>
                       <div className="mt-3 flex items-center justify-between border-t border-emerald-200/60 pt-2 dark:border-emerald-900/60">
                         <span className="text-xs font-black text-slate-900 dark:text-slate-100">₹ 2,40,000</span>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setQuoteConverted(true);
-                            toast.success("Quote converted into Invoice #INV-2026-085 instantly!");
-                          }}
-                          className="rounded-lg bg-blue-600 px-2.5 py-1 text-[11px] font-bold text-white hover:bg-blue-700 transition cursor-pointer"
-                        >
-                          {quoteConverted ? "✓ Generated #INV-085" : "Convert to Invoice →"}
-                        </button>
+                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-600 dark:text-blue-400">
+                          <span>1-Click Auto-Convert Ready</span>
+                          <ArrowRight size={12} />
+                        </span>
                       </div>
                     </div>
 
@@ -810,10 +497,11 @@ export default function LandingPage() {
                       <p className="mt-1 text-[11px] text-slate-500">Client: Horizon Software Solutions</p>
                       <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-2 dark:border-slate-800">
                         <span className="text-xs font-black text-slate-900 dark:text-slate-100">₹ 1,15,000</span>
-                        <span className="text-[11px] text-slate-400">Awaiting Signature</span>
+                        <span className="text-[11px] text-slate-400">Awaiting Digital Signature</span>
                       </div>
                     </div>
                   </div>
+
                 </div>
               )}
 
@@ -965,152 +653,10 @@ export default function LandingPage() {
       </section>
 
       {/* ============================================================
-          SECTION 3: INTERACTIVE ROI & TIME-SAVINGS CALCULATOR
-      ============================================================ */}
-      <section id="calculator" className="py-20 border-t border-slate-200/80 bg-white dark:border-slate-800/80 dark:bg-slate-900/60">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          
-          <div className="text-center max-w-3xl mx-auto space-y-4">
-            <div className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3.5 py-1 text-xs font-bold text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-500/20">
-              <TrendingUp size={14} className="text-emerald-600" />
-              <span>Measurable Business Impact</span>
-            </div>
-            <h2 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100 sm:text-4xl">
-              Calculate Your Operational ROI
-            </h2>
-            <p className="text-sm text-slate-600 dark:text-slate-400">
-              See how much manual administrative time, accounting costs, and cash flow velocity you gain each month.
-            </p>
-          </div>
-
-          <div className="mt-12 max-w-5xl mx-auto rounded-3xl border border-slate-200 bg-slate-50/80 p-6 shadow-xl dark:border-slate-800 dark:bg-slate-900/90 lg:p-8">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-              
-              {/* Sliders Left */}
-              <div className="lg:col-span-7 space-y-6">
-                
-                {/* Invoices per month */}
-                <div className="space-y-2 rounded-2xl bg-white p-4 dark:bg-slate-800 border border-slate-100 dark:border-slate-700">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-bold text-slate-700 dark:text-slate-300">Monthly Invoices & Quotes</span>
-                    <span className="font-black text-blue-600 dark:text-blue-400 text-sm">{roiInvoices} Invoices / mo</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="5"
-                    max="300"
-                    step="5"
-                    value={roiInvoices}
-                    onChange={(e) => setRoiInvoices(Number(e.target.value))}
-                    className="w-full accent-blue-600 h-2 bg-slate-200 dark:bg-slate-700 rounded-lg cursor-pointer"
-                  />
-                  <div className="flex justify-between text-[10px] text-slate-400 font-semibold">
-                    <span>5 Solo</span>
-                    <span>50 Growth</span>
-                    <span>150 Agency</span>
-                    <span>300+ Scale</span>
-                  </div>
-                </div>
-
-                {/* Average Bill Amount */}
-                <div className="space-y-2 rounded-2xl bg-white p-4 dark:bg-slate-800 border border-slate-100 dark:border-slate-700">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-bold text-slate-700 dark:text-slate-300">Average Invoice Amount</span>
-                    <span className="font-black text-indigo-600 dark:text-indigo-400 text-sm">₹ {roiAvgAmount.toLocaleString()}</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="2000"
-                    max="150000"
-                    step="2000"
-                    value={roiAvgAmount}
-                    onChange={(e) => setRoiAvgAmount(Number(e.target.value))}
-                    className="w-full accent-indigo-600 h-2 bg-slate-200 dark:bg-slate-700 rounded-lg cursor-pointer"
-                  />
-                  <div className="flex justify-between text-[10px] text-slate-400 font-semibold">
-                    <span>₹ 2,000</span>
-                    <span>₹ 25,000</span>
-                    <span>₹ 75,000</span>
-                    <span>₹ 1,50,000+</span>
-                  </div>
-                </div>
-
-                {/* Hourly rate */}
-                <div className="space-y-2 rounded-2xl bg-white p-4 dark:bg-slate-800 border border-slate-100 dark:border-slate-700">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-bold text-slate-700 dark:text-slate-300">Hourly Value of Staff / Admin Time</span>
-                    <span className="font-black text-emerald-600 dark:text-emerald-400 text-sm">₹ {roiHourlyRate}/hr</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="300"
-                    max="3000"
-                    step="100"
-                    value={roiHourlyRate}
-                    onChange={(e) => setRoiHourlyRate(Number(e.target.value))}
-                    className="w-full accent-emerald-600 h-2 bg-slate-200 dark:bg-slate-700 rounded-lg cursor-pointer"
-                  />
-                </div>
-              </div>
-
-              {/* Real-time Computed Benefit Output */}
-              <div className="lg:col-span-5 rounded-3xl bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-950 p-6 text-white shadow-2xl space-y-6">
-                <div>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-300">
-                    Calculated Monthly Value
-                  </span>
-                  <div className="mt-2 flex items-baseline gap-2">
-                    <span className="text-4xl font-black text-emerald-400">
-                      ₹ {totalFinancialBenefit.toLocaleString()}
-                    </span>
-                    <span className="text-xs text-slate-300">/ saved per month</span>
-                  </div>
-                </div>
-
-                <div className="space-y-3 border-t border-white/10 pt-4 text-xs text-slate-300">
-                  <div className="flex items-center justify-between">
-                    <span className="flex items-center gap-2">
-                      <Clock size={14} className="text-blue-400" />
-                      <span>Admin Hours Recovered:</span>
-                    </span>
-                    <span className="font-bold text-white">{calculatedHoursSaved} hours / month</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="flex items-center gap-2">
-                      <Zap size={14} className="text-amber-400" />
-                      <span>Faster Payment Realization:</span>
-                    </span>
-                    <span className="font-bold text-emerald-400">~8 Days Faster</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="flex items-center gap-2">
-                      <ShieldCheck size={14} className="text-purple-400" />
-                      <span>Yearly Estimated Value:</span>
-                    </span>
-                    <span className="font-bold text-white">₹ {(totalFinancialBenefit * 12).toLocaleString()} / yr</span>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={handleCtaClick}
-                  className="w-full flex items-center justify-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-500 py-3.5 text-xs font-bold text-white shadow-lg transition active:scale-[0.98] cursor-pointer"
-                >
-                  <span>Start Free & Claim Your ROI</span>
-                  <ArrowRight size={16} />
-                </button>
-              </div>
-
-            </div>
-          </div>
-
-        </div>
-      </section>
-
-      {/* ============================================================
-          SECTION 4: 100% DYNAMIC TRANSPARENT PRICING SUITE
+          SECTION 2: 100% DYNAMIC TRANSPARENT PRICING SUITE
       ============================================================ */}
       <section id="pricing" className="py-20 border-t border-slate-200/80 bg-slate-50/50 dark:border-slate-800/80 dark:bg-slate-900/40">
+
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           
           <div className="text-center max-w-3xl mx-auto space-y-4">
