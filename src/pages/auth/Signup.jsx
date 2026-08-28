@@ -191,6 +191,8 @@ export default function Signup() {
     }
   };
 
+  const handleRequestOtp = handleSignupSubmit;
+
   // ============================================================
   // STEP 2: VERIFY OTP & COMPLETE ACCOUNT CREATION
   // ============================================================
@@ -494,7 +496,7 @@ export default function Signup() {
                         SIGNUP FORM (STEP 1)
                     ================================================== */}
                     <form
-                      onSubmit={handleRequestOtp}
+                      onSubmit={handleSignupSubmit}
                       className="space-y-4"
                     >
                       {/* Full Name */}
