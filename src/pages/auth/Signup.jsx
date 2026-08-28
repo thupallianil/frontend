@@ -53,6 +53,7 @@ export default function Signup() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [agree, setAgree] = useState(false);
+  const [debugOtp, setDebugOtp] = useState("");
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
   const [timer, setTimer] = useState(60);
@@ -65,6 +66,9 @@ export default function Signup() {
       [field]: value,
     }));
   };
+
+  // Password strength calculation
+  const passwordStrength = getPasswordStrength(form.password);
 
   // Timer countdown for resending OTP
   useEffect(() => {
