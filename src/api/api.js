@@ -15,7 +15,7 @@ if (!rawBaseURL.endsWith("/api/")) {
 
 const api = axios.create({
   baseURL: rawBaseURL,
-  timeout: 30000,
+  timeout: 60000,
   headers: {
     "Content-Type": "application/json",
     Accept: "application/json",
