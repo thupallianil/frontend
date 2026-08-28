@@ -48,16 +48,17 @@ export async function requestSignupOtp(dataOrUsername, email, password, password
   let payload = {};
   if (typeof dataOrUsername === "object" && dataOrUsername !== null) {
     payload = {
-      username: dataOrUsername.username || dataOrUsername.name,
-      email: dataOrUsername.email?.trim().toLowerCase(),
+      username: String(dataOrUsername.username || dataOrUsername.name || "").trim(),
+      email: String(dataOrUsername.email || "").trim().toLowerCase(),
       password: dataOrUsername.password,
       password_confirm: dataOrUsername.password_confirm || dataOrUsername.confirmPassword || dataOrUsername.password,
       role: dataOrUsername.role || "client",
+      company_name: dataOrUsername.company_name || dataOrUsername.companyName || undefined,
     };
   } else {
     payload = {
-      username: dataOrUsername,
-      email: email?.trim().toLowerCase(),
+      username: String(dataOrUsername || "").trim(),
+      email: String(email || "").trim().toLowerCase(),
       password,
       password_confirm: password_confirm || password,
       role,

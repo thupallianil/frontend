@@ -45,6 +45,7 @@ export default function Signup() {
     email: "",
     password: "",
     confirmPassword: "",
+    companyName: "",
   });
 
   const [otpDigits, setOtpDigits] = useState(["", "", "", "", "", ""]);
@@ -130,22 +131,28 @@ export default function Signup() {
   const handleSignupSubmit = async (e) => {
     e.preventDefault();
 
-    if (!form.name.trim()) {
+    const name = String(form?.name || "").trim();
+    const email = String(form?.email || "").trim().toLowerCase();
+    const password = String(form?.password || "");
+    const confirmPassword = String(form?.confirmPassword || "");
+    const companyName = String(form?.companyName || "").trim();
+
+    if (!name) {
       toast.error("Please enter your full name.");
       return;
     }
 
-    if (!form.email.trim()) {
+    if (!email) {
       toast.error("Please enter your email address.");
       return;
     }
 
-    if (form.password.length < 8) {
+    if (password.length < 8) {
       toast.error("Password must be at least 8 characters.");
       return;
     }
 
-    if (form.password !== form.confirmPassword) {
+    if (password !== confirmPassword) {
       toast.error("Passwords do not match.");
       return;
     }
@@ -159,12 +166,12 @@ export default function Signup() {
       setLoading(true);
 
       const response = await requestSignupOtp({
-        username: form.name.trim(),
-        email: form.email.trim().toLowerCase(),
-        password: form.password,
-        password_confirm: form.confirmPassword,
-        role,
-        company_name: form.companyName.trim() || undefined,
+        username: name,
+        email: email,
+        password: password,
+        password_confirm: confirmPassword,
+        role: role || "client",
+        company_name: companyName || undefined,
       });
 
       if (response.success) {
@@ -213,7 +220,8 @@ export default function Signup() {
     try {
       setLoading(true);
 
-      const response = await verifySignupOtp(form.email, code);
+      const email = String(form?.email || "").trim().toLowerCase();
+      const response = await verifySignupOtp(email, code);
 
       if (!response.success && !response.access) {
         toast.error(response.message || "Invalid verification code.");
@@ -252,7 +260,8 @@ export default function Signup() {
 
     try {
       setResending(true);
-      const response = await resendSignupOtp(form.email);
+      const email = String(form?.email || "").trim().toLowerCase();
+      const response = await resendSignupOtp(email);
 
       if (response.success) {
         const receivedOtp = response.otp || response.data?.otp;
