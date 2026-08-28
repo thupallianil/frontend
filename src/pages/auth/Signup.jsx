@@ -175,8 +175,9 @@ export default function Signup() {
       });
 
       if (response.success) {
-        toast.success(`Verification code sent to ${form.email}!`);
+        toast.success(`Verification code sent to ${form.email}! Please check your email inbox.`);
         setStep("verify_otp");
+        setTimer(60);
       } else {
         toast.error(response.message || "Failed to send verification code.");
       }
@@ -249,14 +250,15 @@ export default function Signup() {
 
     try {
       setResending(true);
-      const res = await resendSignupOtp(form.email);
-      if (res.success) {
-        toast.success(`A new verification code was sent to ${form.email}!`);
+      const response = await resendSignupOtp(form.email);
+
+      if (response.success) {
+        toast.success(`A new verification code has been sent to ${form.email}!`);
         setTimer(60);
         setOtpDigits(["", "", "", "", "", ""]);
         otpInputsRef.current[0]?.focus();
       } else {
-        toast.error(res.message || "Failed to resend code.");
+        toast.error(response.message || "Could not resend verification code.");
       }
     } catch (error) {
       toast.error(error?.response?.data?.message || "Failed to resend verification code.");

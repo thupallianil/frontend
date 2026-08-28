@@ -19,11 +19,6 @@ import {
   Users,
   Zap,
   TrendingUp,
-  Send,
-  Download,
-  IndianRupee,
-  Clock,
-  Layers,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { useApp } from "../../context/AppContext";
@@ -33,7 +28,6 @@ export default function LandingPage() {
   const { user } = useAuth();
   const { darkMode, toggleDarkMode } = useApp();
 
-  const [activeTab, setActiveTab] = useState("invoice");
   const [openFaq, setOpenFaq] = useState(null);
 
   const isAuthenticated = Boolean(user);
@@ -76,42 +70,36 @@ export default function LandingPage() {
   const FEATURES = [
     {
       icon: FileText,
-      gradient: "from-blue-500 to-cyan-500",
       color: "text-blue-500 bg-blue-500/10",
       title: "Smart Invoicing & Quotations",
       desc: "Create professional GST-compliant invoices and estimates in seconds with automated tax calculations and instant PDF generation.",
     },
     {
       icon: CreditCard,
-      gradient: "from-emerald-500 to-teal-500",
       color: "text-emerald-500 bg-emerald-500/10",
       title: "Online Payments & UPI",
       desc: "Collect payments seamlessly via Razorpay, UPI, cards, and net banking. Automatic payment verification and instant receipts.",
     },
     {
       icon: Users,
-      gradient: "from-purple-500 to-indigo-500",
       color: "text-purple-500 bg-purple-500/10",
       title: "Client & Vendor Management",
       desc: "Track client balances, supplier payables, contact details, and complete billing histories in one unified ledger.",
     },
     {
       icon: BarChart3,
-      gradient: "from-amber-500 to-orange-500",
       color: "text-amber-500 bg-amber-500/10",
       title: "Real-Time Reports & Insights",
       desc: "Monitor your revenue, outstanding payments, monthly cash flow, and export clean financial data to Excel/CSV with one click.",
     },
     {
       icon: ShieldCheck,
-      gradient: "from-cyan-500 to-blue-500",
       color: "text-cyan-500 bg-cyan-500/10",
       title: "Client Self-Service Portal",
       desc: "Give your clients a dedicated portal where they can view invoices, approve quotes, pay online, and access receipts 24/7.",
     },
     {
       icon: LifeBuoy,
-      gradient: "from-rose-500 to-pink-500",
       color: "text-rose-500 bg-rose-500/10",
       title: "Support Ticket Desk",
       desc: "Handle customer queries, service requests, and billing questions smoothly with integrated ticket tracking.",
@@ -139,48 +127,6 @@ export default function LandingPage() {
     },
   ];
 
-  const TAB_CONTENT = {
-    invoice: {
-      badge: "GST Tax Invoice #INV-2026-089",
-      client: "Acme Technologies Pvt Ltd",
-      items: [
-        { desc: "Fullstack Cloud Architecture", qty: "1", amount: "₹45,000" },
-        { desc: "Payment Gateway Integration", qty: "1", amount: "₹18,000" },
-      ],
-      tax: "18% GST (CGST 9% + SGST 9%)",
-      taxAmount: "₹11,340",
-      total: "₹74,340",
-      status: "PAID",
-      statusColor: "bg-emerald-500/10 text-emerald-500 border-emerald-500/30",
-    },
-    payment: {
-      badge: "Razorpay / UPI Instant Settlement",
-      client: "Global Enterprises LLC",
-      items: [
-        { desc: "Transaction ID: pay_Px92kL01m9a", qty: "UPI", amount: "₹32,500" },
-        { desc: "Instant Receipt Generated", qty: "AUTO", amount: "✓ Sent" },
-      ],
-      tax: "Gateway Processing Fee",
-      taxAmount: "₹0 (Direct)",
-      total: "₹32,500",
-      status: "SETTLED",
-      statusColor: "bg-blue-500/10 text-blue-500 border-blue-500/30",
-    },
-    quote: {
-      badge: "Commercial Estimate #QUO-4402",
-      client: "Horizon Retail Systems",
-      items: [
-        { desc: "Enterprise Annual License", qty: "1", amount: "₹1,20,000" },
-        { desc: "Priority 24/7 Support SLA", qty: "1", amount: "₹25,000" },
-      ],
-      tax: "GST 18% Applied",
-      taxAmount: "₹26,100",
-      total: "₹1,71,100",
-      status: "APPROVED (1-Click Convert to Invoice)",
-      statusColor: "bg-purple-500/10 text-purple-500 border-purple-500/30",
-    },
-  };
-
   return (
     <div
       className={`min-h-screen font-sans antialiased overflow-x-hidden transition-colors duration-300 ${
@@ -201,7 +147,7 @@ export default function LandingPage() {
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2.5 group">
             <motion.div
-              whileHover={{ rotate: 10, scale: 1.05 }}
+              whileHover={{ rotate: 8, scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/25"
             >
@@ -221,14 +167,6 @@ export default function LandingPage() {
               }`}
             >
               Features
-            </a>
-            <a
-              href="#preview"
-              className={`transition-colors duration-150 relative py-1 hover:text-blue-600 ${
-                darkMode ? "text-slate-300" : "text-slate-600"
-              }`}
-            >
-              Live Preview
             </a>
             <a
               href="#how-it-works"
@@ -307,7 +245,7 @@ export default function LandingPage() {
       </header>
 
       {/* ============================================================
-          HERO SECTION WITH GLOW & ENHANCED MOTION
+          HERO SECTION
       ============================================================ */}
       <section className="relative overflow-hidden pt-16 pb-20 lg:pt-24 lg:pb-28">
         {/* Dynamic Animated Ambient Blobs */}
@@ -321,7 +259,7 @@ export default function LandingPage() {
           className="absolute top-10 left-1/2 -translate-x-1/2 w-[700px] h-[400px] bg-gradient-to-tr from-blue-500/20 via-indigo-500/15 to-purple-500/20 blur-3xl pointer-events-none rounded-full"
         />
 
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
           {/* Animated Badge */}
           <motion.div
             initial={{ opacity: 0, y: -15 }}
@@ -420,113 +358,7 @@ export default function LandingPage() {
       </section>
 
       {/* ============================================================
-          INTERACTIVE LIVE PREVIEW SHOWCASE
-      ============================================================ */}
-      <section id="preview" className="py-12 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto">
-        {/* Tabs */}
-        <div className="flex justify-center mb-6">
-          <div
-            className={`inline-flex p-1.5 rounded-2xl border backdrop-blur-md ${
-              darkMode
-                ? "bg-slate-900/80 border-slate-800"
-                : "bg-slate-200/70 border-slate-300"
-            }`}
-          >
-            {[
-              { id: "invoice", label: "📄 Tax Invoice", icon: FileText },
-              { id: "payment", label: "💳 Online Payment", icon: CreditCard },
-              { id: "quote", label: "📝 Quotation Estimate", icon: FileCheck },
-            ].map((t) => {
-              const active = activeTab === t.id;
-              return (
-                <button
-                  key={t.id}
-                  onClick={() => setActiveTab(t.id)}
-                  className={`relative px-4 py-2 text-sm font-semibold rounded-xl transition-all duration-200 flex items-center gap-2 ${
-                    active
-                      ? darkMode
-                        ? "bg-blue-600 text-white shadow-md shadow-blue-600/30"
-                        : "bg-white text-blue-700 shadow-sm"
-                      : darkMode
-                      ? "text-slate-400 hover:text-slate-200"
-                      : "text-slate-600 hover:text-slate-900"
-                  }`}
-                >
-                  <t.icon className="w-4 h-4" />
-                  <span>{t.label}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Dynamic Interactive Card with Framer Motion AnimatePresence */}
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={activeTab}
-            initial={{ opacity: 0, y: 15, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -15, scale: 0.98 }}
-            transition={{ duration: 0.25 }}
-            className={`p-6 sm:p-8 rounded-3xl border shadow-2xl relative overflow-hidden transition-colors ${
-              darkMode
-                ? "bg-slate-900/90 border-slate-800 shadow-blue-950/30"
-                : "bg-white border-slate-200 shadow-slate-200/60"
-            }`}
-          >
-            {/* Header of Mock */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-6 border-b border-slate-200 dark:border-slate-800">
-              <div>
-                <div className="text-xs font-semibold text-blue-500 uppercase tracking-wider mb-1">
-                  {TAB_CONTENT[activeTab].badge}
-                </div>
-                <div className="text-xl font-bold">
-                  {TAB_CONTENT[activeTab].client}
-                </div>
-              </div>
-              <span
-                className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs font-bold rounded-full border ${TAB_CONTENT[activeTab].statusColor}`}
-              >
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                {TAB_CONTENT[activeTab].status}
-              </span>
-            </div>
-
-            {/* Line Items */}
-            <div className="py-6 space-y-3">
-              {TAB_CONTENT[activeTab].items.map((it, idx) => (
-                <div
-                  key={idx}
-                  className={`p-3.5 rounded-xl flex items-center justify-between text-sm ${
-                    darkMode ? "bg-slate-950/60" : "bg-slate-50"
-                  }`}
-                >
-                  <span className="font-medium">{it.desc}</span>
-                  <span className="font-bold">{it.amount}</span>
-                </div>
-              ))}
-            </div>
-
-            {/* Total Footer */}
-            <div className="pt-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between text-sm">
-              <span className="text-slate-500 dark:text-slate-400">
-                {TAB_CONTENT[activeTab].tax} ({TAB_CONTENT[activeTab].taxAmount})
-              </span>
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-slate-400 uppercase font-semibold">
-                  Grand Total:
-                </span>
-                <span className="text-2xl font-black text-blue-600 dark:text-blue-400">
-                  {TAB_CONTENT[activeTab].total}
-                </span>
-              </div>
-            </div>
-          </motion.div>
-        </AnimatePresence>
-      </section>
-
-      {/* ============================================================
-          FEATURES SECTION WITH HOVER MOTION
+          FEATURES SECTION
       ============================================================ */}
       <section
         id="features"
@@ -754,7 +586,7 @@ export default function LandingPage() {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={handleCta}
-              className="px-8 py-3.5 rounded-xl text-base font-bold bg-white text-blue-700 hover:bg-blue-50 shadow-xl transition-all"
+              className="px-8 py-3.5 rounded-xl text-base font-bold bg-white text-blue-700 hover:bg-blue-50 shadow-xl transition-all cursor-pointer"
             >
               {isAuthenticated ? "Go to Dashboard" : "Get Started for Free"}
             </motion.button>
@@ -799,11 +631,6 @@ export default function LandingPage() {
                 <li>
                   <a href="#features" className="hover:text-blue-600 transition-colors">
                     Features
-                  </a>
-                </li>
-                <li>
-                  <a href="#preview" className="hover:text-blue-600 transition-colors">
-                    Live Preview
                   </a>
                 </li>
                 <li>

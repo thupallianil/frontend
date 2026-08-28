@@ -110,8 +110,9 @@ export default function ForgotPassword() {
       const response = await forgotPassword(email.trim());
 
       if (response.success) {
-        toast.success(response.message || `Verification code sent to ${email}!`);
+        toast.success(response.message || `Verification code sent to ${email}! Please check your inbox.`);
         setStep("verify_and_reset");
+        setTimer(60);
       } else {
         toast.error(response.message || "Could not process password reset.");
       }
