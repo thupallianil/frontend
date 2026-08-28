@@ -4,23 +4,7 @@ import axios from "axios";
 // SINGLE AUTHORITATIVE AXIOS CLIENT
 // ============================================================
 
-// Smart Base URL Resolution (detects production / Vercel deployment vs local dev)
-let rawBaseURL = (import.meta.env.VITE_API_URL || "").trim();
-
-const isProductionDomain =
-  typeof window !== "undefined" &&
-  window.location.hostname !== "localhost" &&
-  window.location.hostname !== "127.0.0.1";
-
-// When deployed to Vercel/Production, automatically use the live Render backend if localhost is given
-if (
-  (isProductionDomain || import.meta.env.PROD) &&
-  (!rawBaseURL || rawBaseURL.includes("localhost") || rawBaseURL.includes("127.0.0.1"))
-) {
-  rawBaseURL = "https://backend1-cu3z.onrender.com/api/";
-} else if (!rawBaseURL) {
-  rawBaseURL = "http://127.0.0.1:8000/api/";
-}
+let rawBaseURL = (import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/").trim();
 
 if (!rawBaseURL.endsWith("/")) {
   rawBaseURL += "/";
