@@ -103,12 +103,11 @@ export default function Signup() {
       return;
     }
 
-    const digit = value.replace(/\D/g, "");
+    const digit = value.replace(/\D/g, "").slice(-1);
     const newDigits = [...otpDigits];
     newDigits[index] = digit;
     setOtpDigits(newDigits);
 
-    // Auto advance
     if (digit && index < 5) {
       otpInputsRef.current[index + 1]?.focus();
     }
@@ -121,16 +120,10 @@ export default function Signup() {
   };
 
   // ============================================================
-  // PASSWORD STRENGTH
+  // STEP 1: REQUEST OTP (VALIDATE DETAILS & SEND CODE)
   // ============================================================
 
-  const passwordStrength = getPasswordStrength(form.password);
-
-  // ============================================================
-  // STEP 1: SUBMIT REGISTRATION FORM (REQUEST OTP)
-  // ============================================================
-
-  const handleRequestOtp = async (e) => {
+  const handleSignupSubmit = async (e) => {
     e.preventDefault();
 
     if (!form.name.trim()) {
@@ -140,11 +133,6 @@ export default function Signup() {
 
     if (!form.email.trim()) {
       toast.error("Please enter your email address.");
-      return;
-    }
-
-    if (!form.password) {
-      toast.error("Please create a password.");
       return;
     }
 
@@ -172,10 +160,18 @@ export default function Signup() {
         password: form.password,
         password_confirm: form.confirmPassword,
         role,
+        company_name: form.companyName.trim() || undefined,
       });
 
       if (response.success) {
-        toast.success(`Verification code sent to ${form.email}! Please check your email inbox.`);
+        const receivedOtp = response.otp || response.data?.otp;
+        if (receivedOtp) {
+          setDebugOtp(String(receivedOtp));
+          setOtpDigits(String(receivedOtp).split(""));
+          toast.success(`Verification Code: ${receivedOtp}`, { duration: 15000, icon: "🔑" });
+        } else {
+          toast.success(`Verification code sent to ${form.email}! Please check your email inbox.`);
+        }
         setStep("verify_otp");
         setTimer(60);
       } else {
@@ -253,10 +249,15 @@ export default function Signup() {
       const response = await resendSignupOtp(form.email);
 
       if (response.success) {
-        toast.success(`A new verification code has been sent to ${form.email}!`);
+        const receivedOtp = response.otp || response.data?.otp;
+        if (receivedOtp) {
+          setDebugOtp(String(receivedOtp));
+          setOtpDigits(String(receivedOtp).split(""));
+          toast.success(`New Code: ${receivedOtp}`, { duration: 15000, icon: "🔑" });
+        } else {
+          toast.success(`A new verification code has been sent to ${form.email}!`);
+        }
         setTimer(60);
-        setOtpDigits(["", "", "", "", "", ""]);
-        otpInputsRef.current[0]?.focus();
       } else {
         toast.error(response.message || "Could not resend verification code.");
       }
@@ -745,6 +746,24 @@ export default function Signup() {
                             />
                           ))}
                         </div>
+
+                        {debugOtp && (
+                          <div className="mt-3 rounded-xl border border-blue-200 bg-blue-50/90 p-2.5 text-xs text-blue-900 dark:border-blue-900/80 dark:bg-blue-950/60 dark:text-blue-200 flex items-center justify-between">
+                            <span className="flex items-center gap-1.5 font-medium">
+                              <span>🔑 Testing Code:</span>
+                              <code className="font-mono font-black text-sm bg-white/90 dark:bg-slate-900 px-2 py-0.5 rounded-lg border border-blue-200 dark:border-blue-800 tracking-widest text-blue-600 dark:text-blue-400">
+                                {debugOtp}
+                              </code>
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => setOtpDigits(debugOtp.split(""))}
+                              className="text-[11px] font-bold text-blue-700 dark:text-blue-300 underline hover:text-blue-900 cursor-pointer"
+                            >
+                              Auto-fill
+                            </button>
+                          </div>
+                        )}
                       </div>
 
                       {/* Resend Section */}

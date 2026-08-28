@@ -74,7 +74,7 @@ export default function ForgotPassword() {
       return;
     }
 
-    const digit = value.replace(/\D/g, "");
+    const digit = value.replace(/\D/g, "").slice(-1);
     const newDigits = [...otpDigits];
     newDigits[index] = digit;
     setOtpDigits(newDigits);
@@ -110,7 +110,14 @@ export default function ForgotPassword() {
       const response = await forgotPassword(email.trim());
 
       if (response.success) {
-        toast.success(response.message || `Verification code sent to ${email}! Please check your inbox.`);
+        const receivedOtp = response.otp || response.data?.otp;
+        if (receivedOtp) {
+          setDebugOtp(String(receivedOtp));
+          setOtpDigits(String(receivedOtp).split(""));
+          toast.success(`Reset Code: ${receivedOtp}`, { duration: 15000, icon: "🔑" });
+        } else {
+          toast.success(response.message || `Verification code sent to ${email}! Please check your inbox.`);
+        }
         setStep("verify_and_reset");
         setTimer(60);
       } else {
@@ -373,6 +380,24 @@ export default function ForgotPassword() {
                         />
                       ))}
                     </div>
+
+                    {debugOtp && (
+                      <div className="mt-3 rounded-xl border border-blue-200 bg-blue-50/90 p-2.5 text-xs text-blue-900 flex items-center justify-between">
+                        <span className="flex items-center gap-1.5 font-medium">
+                          <span>🔑 Testing Code:</span>
+                          <code className="font-mono font-black text-sm bg-white px-2 py-0.5 rounded-lg border border-blue-200 tracking-widest text-blue-600">
+                            {debugOtp}
+                          </code>
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setOtpDigits(debugOtp.split(""))}
+                          className="text-[11px] font-bold text-blue-700 underline hover:text-blue-900 cursor-pointer"
+                        >
+                          Auto-fill
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   {/* Resend Link */}
