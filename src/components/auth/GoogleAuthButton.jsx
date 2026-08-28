@@ -40,6 +40,7 @@ function loadGoogleGsiScript() {
 
 export default function GoogleAuthButton({
   role = "client",
+  mode = "login",
   text = "Continue with Google",
   className = "",
   disabled = false,
@@ -47,12 +48,17 @@ export default function GoogleAuthButton({
   const [loading, setLoading] = useState(false);
   const hiddenBtnRef = useRef(null);
   const roleRef = useRef(role);
+  const modeRef = useRef(mode);
   const navigate = useNavigate();
   const { login } = useAuth();
 
   useEffect(() => {
     roleRef.current = role;
   }, [role]);
+
+  useEffect(() => {
+    modeRef.current = mode;
+  }, [mode]);
 
   useEffect(() => {
     let isMounted = true;
@@ -107,7 +113,12 @@ export default function GoogleAuthButton({
     setLoading(true);
     try {
       const currentRole = roleRef.current || "client";
-      const authResult = await loginWithGoogle(response.credential, currentRole);
+      const currentMode = modeRef.current || "login";
+      const authResult = await loginWithGoogle(
+        response.credential,
+        currentRole,
+        currentMode
+      );
       const user = authResult.user;
 
 

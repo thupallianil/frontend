@@ -366,6 +366,7 @@ export default function Login() {
                   {/* Google Social Login Button */}
                   <GoogleAuthButton
                     role={role}
+                    mode="login"
                     text="Login with Google"
                     disabled={loading}
                   />

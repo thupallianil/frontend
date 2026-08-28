@@ -256,10 +256,11 @@ export async function resetPassword(data) {
 // GOOGLE AUTH
 // ============================================================
 
-export async function loginWithGoogle(credential, role = "client") {
+export async function loginWithGoogle(credential, role = "client", mode = "login") {
   const response = await api.post("auth/google/", {
     credential,
     role,
+    mode,
   });
 
   const access =

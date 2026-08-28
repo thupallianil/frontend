@@ -686,6 +686,7 @@ export default function Signup() {
                       {/* Google */}
                       <GoogleAuthButton
                         role={role}
+                        mode="signup"
                         text="Sign up with Google"
                         disabled={loading}
                       />
