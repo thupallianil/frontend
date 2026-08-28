@@ -55,6 +55,8 @@ export default function NotificationDropdown() {
   const dropdownRef = useRef(null);
 
   const fetchNotifications = async () => {
+    const token = localStorage.getItem("access_token");
+    if (!token) return;
     try {
       const res = await notificationService.getAll();
       if (res?.success) {
@@ -67,6 +69,8 @@ export default function NotificationDropdown() {
   };
 
   useEffect(() => {
+    const token = localStorage.getItem("access_token");
+    if (!token) return;
     fetchNotifications();
     const interval = setInterval(fetchNotifications, 15000); // 15s poll
     return () => clearInterval(interval);

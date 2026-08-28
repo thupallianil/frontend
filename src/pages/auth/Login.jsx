@@ -124,10 +124,8 @@ export default function Login() {
           toast.error(data?.message || "You do not have permission to login with this role.");
           return;
         }
-        if (data?.errors) {
-          const firstError = Object.values(data.errors)[0];
-          const msg = Array.isArray(firstError) ? firstError[0] : firstError;
-          toast.error(msg || "Login validation failed.");
+        if (error.response.status === 401) {
+          toast.error(data?.message || data?.detail || "Invalid email or password. If you don't have an account yet, please sign up first.");
           return;
         }
         toast.error(data?.message || data?.detail || "Invalid email or password.");
