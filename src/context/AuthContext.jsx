@@ -43,10 +43,17 @@ export function AuthProvider({ children }) {
         setUser(userData);
       } else {
         setUser(null);
+        localStorage.removeItem("access_token");
+        localStorage.removeItem("refresh_token");
+        localStorage.removeItem("user");
+        localStorage.removeItem("auth_user");
       }
-    } catch (err) {
-      console.warn("Auth verification failed:", err?.message);
+    } catch {
       setUser(null);
+      localStorage.removeItem("access_token");
+      localStorage.removeItem("refresh_token");
+      localStorage.removeItem("user");
+      localStorage.removeItem("auth_user");
     } finally {
       setLoading(false);
     }
