@@ -94,6 +94,10 @@ export function AuthProvider({ children }) {
   // =====================================================
 
   const login = (userData) => {
+    // Normal login clears any stale impersonation flags
+    localStorage.removeItem("impersonation_super_admin_session");
+    localStorage.removeItem("impersonation_meta");
+
     if (userData) {
       localStorage.setItem("user", JSON.stringify(userData));
       localStorage.setItem("auth_user", JSON.stringify(userData));
@@ -108,6 +112,8 @@ export function AuthProvider({ children }) {
 
   const logout = async () => {
     try {
+      localStorage.removeItem("impersonation_super_admin_session");
+      localStorage.removeItem("impersonation_meta");
       await apiLogout();
     } catch (err) {
       console.warn("Logout error:", err);
