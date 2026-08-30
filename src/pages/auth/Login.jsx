@@ -10,6 +10,8 @@ import {
   Lock,
   Mail,
   Moon,
+  Package,
+  Shield,
   ShieldCheck,
   Sparkles,
   Sun,
@@ -21,42 +23,65 @@ import toast from "react-hot-toast";
 import api from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
 import { useApp } from "../../context/AppContext";
+import { authService } from "../../services/authService";
 import GoogleAuthButton from "../../components/auth/GoogleAuthButton";
 
+const DEMO_ACCOUNTS = {
+  super_admin: {
+    email: "thupallianil12@gmail.com",
+    password: "SuperAdmin@123",
+    roleName: "Super Admin",
+    icon: Shield,
+    color: "bg-purple-600 hover:bg-purple-700 text-white",
+    path: "/superadmin/dashboard",
+  },
+  admin: {
+    email: "thupallianil012345@gmail.com",
+    password: "Admin@123",
+    roleName: "Admin (Company)",
+    icon: Building2,
+    color: "bg-indigo-600 hover:bg-indigo-700 text-white",
+    path: "/admin/dashboard",
+  },
+  vendor: {
+    email: "thupallianil@gmail.com",
+    password: "Admin@123",
+    roleName: "Vendor (Supplier)",
+    icon: Package,
+    color: "bg-blue-600 hover:bg-blue-700 text-white",
+    path: "/vendor/dashboard",
+  },
+  client: {
+    email: "thupallianil108@gmail.com",
+    password: "Admin@123",
+    roleName: "Client (Customer)",
+    icon: Users,
+    color: "bg-emerald-600 hover:bg-emerald-700 text-white",
+    path: "/client/dashboard",
+  },
+};
 
 export default function Login() {
   const navigate = useNavigate();
   const { login } = useAuth();
   const { darkMode, toggleDarkMode } = useApp();
 
-  // Role: "client" or "admin"
-  const [role, setRole] = useState("client");
+  // 4 Roles: "super_admin", "admin", "vendor", "client"
+  const [role, setRole] = useState("admin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [remember, setRemember] = useState(false);
+  const [remember, setRemember] = useState(true);
   const [loading, setLoading] = useState(false);
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
-
-    if (!email.trim()) {
-      toast.error("Please enter your email address.");
-      return;
-    }
-
-    if (!password) {
-      toast.error("Please enter your password.");
-      return;
-    }
-
+  const executeLogin = async (loginEmail, loginPassword, loginRole) => {
     try {
       setLoading(true);
 
       const response = await api.post("/auth/login/", {
-        email: email.trim().toLowerCase(),
-        password,
-        role,
+        email: loginEmail.trim().toLowerCase(),
+        password: loginPassword,
+        role: loginRole,
       });
 
       if (!response.data?.success) {
@@ -83,22 +108,6 @@ export default function Login() {
         return;
       }
 
-      const userIsAdmin =
-        user?.is_staff === true ||
-        user?.is_superuser === true ||
-        user?.role === "admin";
-
-      // Role check
-      if (role === "admin" && !userIsAdmin) {
-        toast.error("This account is not an admin account. Please switch to Client tab.");
-        return;
-      }
-
-      if (role === "client" && userIsAdmin) {
-        toast.error("This is an admin account. Please switch to Admin tab.");
-        return;
-      }
-
       // Persist auth
       localStorage.setItem("access_token", accessToken);
       localStorage.setItem("refresh_token", refreshToken);
@@ -108,13 +117,10 @@ export default function Login() {
 
       login(user);
 
-      toast.success(response.data?.message || "Welcome back! Login successful.");
+      toast.success(response.data?.message || `Welcome back, ${user.name || "User"}!`);
 
-      if (userIsAdmin) {
-        navigate("/admin/dashboard", { replace: true });
-      } else {
-        navigate("/client/dashboard", { replace: true });
-      }
+      const targetPath = authService.getDashboardPath(user);
+      navigate(targetPath, { replace: true });
     } catch (error) {
       console.error("Login error:", error);
 
@@ -143,10 +149,35 @@ export default function Login() {
     }
   };
 
-  return (
+  const handleLogin = (e) => {
+    e.preventDefault();
 
+    if (!email.trim()) {
+      toast.error("Please enter your email address.");
+      return;
+    }
+
+    if (!password) {
+      toast.error("Please enter your password.");
+      return;
+    }
+
+    executeLogin(email, password, role);
+  };
+
+  const handleDemoLogin = (demoKey) => {
+    const demo = DEMO_ACCOUNTS[demoKey];
+    if (!demo) return;
+    setRole(demoKey);
+    setEmail(demo.email);
+    setPassword(demo.password);
+    toast.success(`Loaded credentials for ${demo.roleName}`);
+    executeLogin(demo.email, demo.password, demoKey);
+  };
+
+  return (
     <div className="min-h-screen flex flex-col justify-between bg-[#fbfbfb] dark:bg-slate-950 text-slate-900 dark:text-slate-100 selection:bg-slate-900 selection:text-white transition-colors duration-300">
-      {/* Top Bar with Theme Switcher & Home Link */}
+      {/* Top Bar */}
       <div className="w-full max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
         <Link
           to="/"
@@ -166,121 +197,189 @@ export default function Login() {
       </div>
 
       {/* Main Container */}
-      <div className="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8 py-8">
+      <div className="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8 py-4">
         <div className="w-full max-w-5xl rounded-3xl bg-white dark:bg-slate-900/90 border border-slate-200/80 dark:border-slate-800 shadow-2xl shadow-slate-200/50 dark:shadow-none overflow-hidden">
           <div className="grid grid-cols-1 lg:grid-cols-12 min-h-[580px]">
             {/* ======================================================
-                LEFT COLUMN: GREETING & BRAND HERO
+                LEFT COLUMN: GREETING & 4 ROLE DEMO QUICK ACCESS
             ====================================================== */}
-            <div className="lg:col-span-6 p-8 sm:p-12 lg:p-14 flex flex-col justify-between border-b lg:border-b-0 lg:border-r border-slate-100 dark:border-slate-800/80 bg-white dark:bg-slate-900">
+            <div className="lg:col-span-5 p-8 sm:p-10 flex flex-col justify-between border-b lg:border-b-0 lg:border-r border-slate-100 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/50">
               <div>
-                {/* Starburst / Asterisk Geometric Icon */}
-                <motion.div
-                  initial={{ rotate: -45, scale: 0.8, opacity: 0 }}
-                  animate={{ rotate: 0, scale: 1, opacity: 1 }}
-                  transition={{ duration: 0.5 }}
-                  className="mb-8"
-                >
-                  <svg
-                    className="w-12 h-12 text-slate-900 dark:text-white"
-                    viewBox="0 0 100 100"
-                    fill="currentColor"
-                  >
-                    {/* 8-point geometric starburst matching the design */}
-                    <path d="M50 0 L58 35 L93 20 L68 50 L93 80 L58 65 L50 100 L42 65 L7 80 L32 50 L7 20 L42 35 Z" />
-                  </svg>
-                </motion.div>
+                {/* Brand Logo & Heading */}
+                <div className="flex items-center gap-2 mb-6">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#6342ff] text-white font-bold shadow-md shadow-indigo-600/30">
+                    <Sparkles size={18} />
+                  </div>
+                  <span className="text-lg font-black tracking-tight text-slate-950 dark:text-white">
+                    InvoiceFlow
+                  </span>
+                </div>
 
-                {/* Big Bold Greeting */}
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.1 }}
-                  className="space-y-3"
-                >
-                  <h1 className="text-4xl sm:text-5xl font-black tracking-tight text-slate-950 dark:text-white leading-[1.1]">
-                    Hello<br />
-                    InvoiceFlow! <span className="inline-block animate-wiggle">👋</span>
+                <div className="space-y-2">
+                  <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-950 dark:text-white">
+                    Sign in to your Portal
                   </h1>
-
-                  <p className="text-sm sm:text-base leading-relaxed text-slate-600 dark:text-slate-400 max-w-md pt-2">
-                    Skip repetitive and manual billing tasks. Get paid 3x faster through automated invoicing, dynamic UPI QR payments, and self-service client portals!
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Choose one of the 4 dedicated roles below to log in or click any demo profile for instant access:
                   </p>
-                </motion.div>
+                </div>
+
+                {/* 4 DEMO LOGIN QUICK ACCESS BUTTONS */}
+                <div className="mt-6 space-y-2.5">
+                  <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
+                    ⚡ 1-Click Demo Accounts
+                  </p>
+
+                  <div className="grid grid-cols-1 gap-2">
+                    {Object.entries(DEMO_ACCOUNTS).map(([key, demo]) => {
+                      const Icon = demo.icon;
+                      return (
+                        <button
+                          key={key}
+                          type="button"
+                          disabled={loading}
+                          onClick={() => handleDemoLogin(key)}
+                          className={`flex items-center justify-between p-2.5 rounded-xl border border-slate-200/80 dark:border-slate-700/80 bg-white dark:bg-slate-800 hover:border-indigo-400 hover:shadow-xs transition text-left group ${
+                            role === key ? "ring-2 ring-indigo-500/30 border-indigo-500 bg-indigo-50/30 dark:bg-indigo-950/20" : ""
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
+                              key === "super_admin" ? "bg-purple-100 text-purple-600 dark:bg-purple-950/60 dark:text-purple-400" :
+                              key === "admin" ? "bg-indigo-100 text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-400" :
+                              key === "vendor" ? "bg-blue-100 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400" :
+                              "bg-emerald-100 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400"
+                            }`}>
+                              <Icon size={15} />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-xs font-bold text-slate-800 dark:text-slate-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 truncate">
+                                {demo.roleName}
+                              </p>
+                              <p className="text-[10px] text-slate-400 truncate font-mono">
+                                {demo.email}
+                              </p>
+                            </div>
+                          </div>
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300 group-hover:bg-indigo-600 group-hover:text-white transition">
+                            Login →
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
 
-              {/* Bottom Left Note / Features Chip */}
-              <div className="pt-8 mt-6 border-t border-slate-100 dark:border-slate-800/60 flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
-                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400 font-bold text-[10px]">
-                  ✓
-                </div>
-                <span>GST Compliant • Instant UPI Settlement • 99.9% Uptime</span>
+              {/* Bottom Feature Badges */}
+              <div className="pt-6 mt-4 border-t border-slate-200/60 dark:border-slate-800 text-[11px] text-slate-500 dark:text-slate-400">
+                <span>🔐 Enterprise Role-Based Access Control (RBAC)</span>
               </div>
             </div>
 
             {/* ======================================================
-                RIGHT COLUMN: LOGIN FORM
+                RIGHT COLUMN: 4-ROLE SELECTOR & LOGIN FORM
             ====================================================== */}
-            <div className="lg:col-span-6 p-8 sm:p-12 lg:p-14 flex flex-col justify-between bg-white dark:bg-slate-900/60">
+            <div className="lg:col-span-7 p-8 sm:p-10 flex flex-col justify-between bg-white dark:bg-slate-900">
               <div>
-                {/* Brand Header */}
-                <div className="flex items-center justify-between mb-8">
-                  <span className="text-base font-black tracking-tight text-slate-950 dark:text-white">
-                    InvoiceFlow
-                  </span>
+                {/* 4 Dedicated Role Switcher Tabs */}
+                <div className="mb-6">
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">
+                    Select Your Role:
+                  </label>
 
-                  {/* Role Switcher Pills */}
-                  <div className="flex items-center gap-1 rounded-xl bg-slate-100 p-1 dark:bg-slate-800">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 p-1 rounded-2xl bg-slate-100 dark:bg-slate-800">
                     <button
                       type="button"
-                      onClick={() => setRole("client")}
-                      className={`flex items-center gap-1.5 rounded-lg px-3 py-1 text-xs font-semibold transition ${
-                        role === "client"
-                          ? "bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white"
-                          : "text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+                      onClick={() => {
+                        setRole("super_admin");
+                        setEmail("superadmin@invoiceflow.com");
+                        setPassword("SuperAdmin@123");
+                      }}
+                      className={`flex items-center justify-center gap-1.5 rounded-xl py-2 px-2 text-xs font-bold transition ${
+                        role === "super_admin"
+                          ? "bg-purple-600 text-white shadow-md shadow-purple-600/30"
+                          : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
                       }`}
                     >
-                      <User size={13} />
-                      <span>Client</span>
+                      <Shield size={13} />
+                      <span>Super Admin</span>
                     </button>
 
                     <button
                       type="button"
-                      onClick={() => setRole("admin")}
-                      className={`flex items-center gap-1.5 rounded-lg px-3 py-1 text-xs font-semibold transition ${
+                      onClick={() => {
+                        setRole("admin");
+                        setEmail("admin@invoiceflow.com");
+                        setPassword("Admin@123");
+                      }}
+                      className={`flex items-center justify-center gap-1.5 rounded-xl py-2 px-2 text-xs font-bold transition ${
                         role === "admin"
-                          ? "bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white"
-                          : "text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+                          ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30"
+                          : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
                       }`}
                     >
                       <Building2 size={13} />
                       <span>Admin</span>
                     </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setRole("vendor");
+                        setEmail("vendor@invoiceflow.com");
+                        setPassword("Vendor@123");
+                      }}
+                      className={`flex items-center justify-center gap-1.5 rounded-xl py-2 px-2 text-xs font-bold transition ${
+                        role === "vendor"
+                          ? "bg-blue-600 text-white shadow-md shadow-blue-600/30"
+                          : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+                      }`}
+                    >
+                      <Package size={13} />
+                      <span>Vendor</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setRole("client");
+                        setEmail("client@invoiceflow.com");
+                        setPassword("Client@123");
+                      }}
+                      className={`flex items-center justify-center gap-1.5 rounded-xl py-2 px-2 text-xs font-bold transition ${
+                        role === "client"
+                          ? "bg-emerald-600 text-white shadow-md shadow-emerald-600/30"
+                          : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+                      }`}
+                    >
+                      <Users size={13} />
+                      <span>Client</span>
+                    </button>
                   </div>
                 </div>
 
-                {/* Form Title & Subtitle */}
-                <div className="space-y-1 mb-6">
-                  <h2 className="text-2xl font-extrabold text-slate-950 dark:text-white tracking-tight">
-                    Welcome Back!
+                {/* Form Header */}
+                <div className="space-y-1 mb-5">
+                  <h2 className="text-xl font-extrabold text-slate-950 dark:text-white tracking-tight">
+                    {role === "super_admin"
+                      ? "Super Admin Portal Login"
+                      : role === "admin"
+                      ? "Business Admin Workspace Login"
+                      : role === "vendor"
+                      ? "Supplier & Vendor Portal Login"
+                      : "Client & Customer Portal Login"}
                   </h2>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Don't have an account?{" "}
-                    <Link
-                      to="/signup"
-                      className="font-semibold text-slate-900 underline underline-offset-2 hover:text-blue-600 dark:text-slate-200 dark:hover:text-blue-400 transition"
-                    >
-                      Create a new account now.
-                    </Link>{" "}
-                    It's FREE! Takes less than a minute.
+                    Enter your registered email and password to access your dashboard.
                   </p>
                 </div>
 
                 {/* Form */}
-                <form onSubmit={handleLogin} className="space-y-5">
+                <form onSubmit={handleLogin} className="space-y-4">
                   {/* Email Field */}
                   <div>
-                    <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                       Email Address
                     </label>
                     <div className="relative">
@@ -290,7 +389,7 @@ export default function Login() {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="e.g. yourname@company.com"
-                        className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100 dark:focus:border-blue-500 dark:focus:ring-blue-500 transition"
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100 dark:focus:border-indigo-500 dark:focus:ring-indigo-950 transition"
                       />
                     </div>
                   </div>
@@ -298,12 +397,12 @@ export default function Login() {
                   {/* Password Field */}
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">
+                      <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
                         Password
                       </label>
                       <Link
                         to="/forgot-password"
-                        className="text-xs font-semibold text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition"
+                        className="text-xs font-semibold text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition"
                       >
                         Forgot password?
                       </Link>
@@ -315,7 +414,7 @@ export default function Login() {
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="••••••••••••"
-                        className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2.5 pr-10 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100 dark:focus:border-blue-500 dark:focus:ring-blue-500 transition"
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2.5 pr-10 text-sm text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100 dark:focus:border-indigo-500 dark:focus:ring-indigo-950 transition"
                       />
                       <button
                         type="button"
@@ -335,7 +434,7 @@ export default function Login() {
                       type="checkbox"
                       checked={remember}
                       onChange={(e) => setRemember(e.target.checked)}
-                      className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900 dark:border-slate-700 dark:bg-slate-800 cursor-pointer"
+                      className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 dark:border-slate-700 dark:bg-slate-800 cursor-pointer"
                     />
                     <label
                       htmlFor="remember-me"
@@ -345,7 +444,7 @@ export default function Login() {
                     </label>
                   </div>
 
-                  {/* Primary Submit Button: Black / Dark Pill Button */}
+                  {/* Submit Button */}
                   <button
                     type="submit"
                     disabled={loading}
@@ -357,11 +456,11 @@ export default function Login() {
                         <span>Signing In...</span>
                       </span>
                     ) : (
-                      <span>Login Now</span>
+                      <span>Login to {DEMO_ACCOUNTS[role]?.roleName || "Portal"}</span>
                     )}
                   </button>
 
-                  {/* Google Social Login Button */}
+                  {/* Google Social Login */}
                   <GoogleAuthButton
                     role={role}
                     mode="login"
@@ -369,16 +468,15 @@ export default function Login() {
                     disabled={loading}
                   />
 
-
-                  {/* Forgot Password Link Below */}
+                  {/* Signup Link */}
                   <div className="text-center pt-2">
                     <p className="text-xs text-slate-500 dark:text-slate-400">
-                      Forgot password?{" "}
+                      Don't have an account?{" "}
                       <Link
-                        to="/forgot-password"
-                        className="font-bold text-slate-900 underline underline-offset-2 hover:text-blue-600 dark:text-white dark:hover:text-blue-400 transition"
+                        to="/signup"
+                        className="font-bold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 underline underline-offset-2"
                       >
-                        Click here
+                        Create an account
                       </Link>
                     </p>
                   </div>
@@ -389,8 +487,8 @@ export default function Login() {
         </div>
       </div>
 
-      {/* Footer Copyright */}
-      <footer className="w-full max-w-7xl mx-auto px-6 py-6 text-center text-xs text-slate-400 dark:text-slate-500">
+      {/* Footer */}
+      <footer className="w-full max-w-7xl mx-auto px-6 py-4 text-center text-xs text-slate-400 dark:text-slate-500">
         © {new Date().getFullYear()} InvoiceFlow. All rights reserved.
       </footer>
     </div>

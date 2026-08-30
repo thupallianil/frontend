@@ -31,6 +31,7 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 import useSettings from "../../hooks/useSettings";
+import { useAuth } from "../../context/AuthContext";
 import TemplatePreviewModal from "./TemplatePreviewModal";
 import DynamicUpiQr from "../payments/DynamicUpiQr";
 
@@ -218,6 +219,7 @@ export default function SettingsModal({
   onSaved,
 }) {
   const { settings, updateSettings } = useSettings();
+  const { updateUser } = useAuth();
   const [category, setCategory] = useState(initialCategory || "general");
   const [form, setForm] = useState({});
   const [saving, setSaving] = useState(false);
@@ -249,6 +251,12 @@ export default function SettingsModal({
     try {
       setSaving(true);
       await updateSettings(category, form);
+      if (category === "business") {
+        updateUser?.({
+          name: form.companyName || form.businessName,
+          company_name: form.companyName || form.businessName,
+        });
+      }
       toast.success(`${config.title} updated successfully`);
       onSaved?.(form);
       onClose?.();

@@ -203,21 +203,21 @@ export default function ClientDashboard() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-slate-50 p-4 sm:p-6 lg:p-8">
+            <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-4 sm:p-6 lg:p-8">
                 <div className="mx-auto max-w-7xl">
                     <div className="animate-pulse space-y-6">
-                        <div className="h-28 rounded-3xl bg-white" />
+                        <div className="h-28 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800" />
 
                         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                             {[1, 2, 3, 4].map((item) => (
                                 <div
                                     key={item}
-                                    className="h-32 rounded-2xl bg-white"
+                                    className="h-32 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800"
                                 />
                             ))}
                         </div>
 
-                        <div className="h-80 rounded-3xl bg-white" />
+                        <div className="h-80 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800" />
                     </div>
                 </div>
             </div>
@@ -225,17 +225,17 @@ export default function ClientDashboard() {
     }
 
     return (
-        <div className="min-h-screen bg-slate-50 p-4 sm:p-6 lg:p-8">
+        <div className="space-y-6 pb-12">
             <div className="mx-auto max-w-7xl space-y-6">
 
                 {/* ======================================================
             HEADER
         ====================================================== */}
 
-                <div className="rounded-3xl bg-slate-950 p-6 text-white shadow-sm sm:p-8">
+                <div className="rounded-3xl bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-950 p-6 text-white shadow-sm sm:p-8 border border-slate-800">
                     <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
                         <div>
-                            <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                            <p className="text-xs font-semibold uppercase tracking-wider text-indigo-400">
                                 Client Portal
                             </p>
 
@@ -243,7 +243,7 @@ export default function ClientDashboard() {
                                 Dashboard
                             </h1>
 
-                            <p className="mt-2 max-w-xl text-sm text-slate-400">
+                            <p className="mt-2 max-w-xl text-sm text-slate-300">
                                 View your quotations, invoices, payments and
                                 outstanding balances.
                             </p>
@@ -253,7 +253,7 @@ export default function ClientDashboard() {
                             <button
                                 type="button"
                                 onClick={() => setTicketModalOpen(true)}
-                                className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 text-xs font-bold text-white transition hover:bg-indigo-700 shadow-sm"
+                                className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 text-xs font-bold text-white transition hover:bg-indigo-500 shadow-sm cursor-pointer"
                             >
                                 <LifeBuoy size={15} />
                                 Raise Support Ticket
@@ -261,10 +261,10 @@ export default function ClientDashboard() {
                             <button
                                 type="button"
                                 onClick={loadDashboard}
-                                className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-white px-4 text-xs font-bold text-slate-900 transition hover:bg-slate-100"
+                                className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-white transition hover:bg-white/20"
+                                title="Refresh"
                             >
                                 <RefreshCw size={15} />
-                                Refresh
                             </button>
                         </div>
                     </div>
@@ -275,7 +275,7 @@ export default function ClientDashboard() {
         ====================================================== */}
 
                 {error && (
-                    <div className="flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-red-700">
+                    <div className="flex items-start gap-3 rounded-2xl border border-red-200 dark:border-red-900/40 bg-red-50 dark:bg-red-950/30 p-4 text-red-700 dark:text-red-400">
                         <AlertCircle
                             size={18}
                             className="mt-0.5 shrink-0"
@@ -335,19 +335,19 @@ export default function ClientDashboard() {
 
                 {(overdueInvoices > 0 ||
                     outstandingAmount > 0) && (
-                        <div className="rounded-3xl border border-amber-200 bg-amber-50 p-5">
+                        <div className="rounded-3xl border border-amber-200 dark:border-amber-900/40 bg-amber-50 dark:bg-amber-950/30 p-5">
                             <div className="flex items-start gap-3">
                                 <Wallet
                                     size={20}
-                                    className="mt-0.5 text-amber-600"
+                                    className="mt-0.5 text-amber-600 dark:text-amber-400"
                                 />
 
                                 <div>
-                                    <h2 className="text-sm font-bold text-amber-900">
+                                    <h2 className="text-sm font-bold text-amber-900 dark:text-amber-300">
                                         Payment summary
                                     </h2>
 
-                                    <p className="mt-1 text-xs leading-5 text-amber-700">
+                                    <p className="mt-1 text-xs leading-5 text-amber-700 dark:text-amber-400">
                                         You have{" "}
                                         <strong>
                                             {formatMoney(outstandingAmount)}
@@ -377,11 +377,11 @@ export default function ClientDashboard() {
 
                     {/* QUOTE SUMMARY */}
 
-                    <div className="rounded-3xl border border-slate-200 bg-white shadow-sm">
+                    <div className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
 
-                        <div className="flex items-center justify-between border-b border-slate-100 p-5">
+                        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 p-5">
                             <div>
-                                <h2 className="text-sm font-bold text-slate-900">
+                                <h2 className="text-sm font-bold text-slate-900 dark:text-white">
                                     Recent quotations
                                 </h2>
 
@@ -392,7 +392,7 @@ export default function ClientDashboard() {
 
                             <Link
                                 to="/client/quotes"
-                                className="inline-flex items-center gap-1 text-xs font-bold text-slate-700 hover:text-slate-950"
+                                className="inline-flex items-center gap-1 text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline"
                             >
                                 View all
                                 <ArrowRight size={14} />
@@ -405,14 +405,14 @@ export default function ClientDashboard() {
                                 text="No quotations available."
                             />
                         ) : (
-                            <div className="divide-y divide-slate-100">
+                            <div className="divide-y divide-slate-100 dark:divide-slate-800">
                                 {recentQuotes.map((quote) => (
                                     <div
                                         key={quote.id}
                                         className="flex items-center justify-between gap-4 p-5"
                                     >
                                         <div className="min-w-0">
-                                            <p className="truncate text-xs font-bold text-slate-900">
+                                            <p className="truncate text-xs font-bold text-slate-900 dark:text-white">
                                                 {quote.quote_number ||
                                                     `Quote #${quote.id}`}
                                             </p>
@@ -425,7 +425,7 @@ export default function ClientDashboard() {
                                         </div>
 
                                         <div className="text-right">
-                                            <p className="text-xs font-bold text-slate-900">
+                                            <p className="text-xs font-bold text-slate-900 dark:text-white">
                                                 {formatMoney(quote.total)}
                                             </p>
 
@@ -445,11 +445,11 @@ export default function ClientDashboard() {
 
                     {/* INVOICE SUMMARY */}
 
-                    <div className="rounded-3xl border border-slate-200 bg-white shadow-sm">
+                    <div className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
 
-                        <div className="flex items-center justify-between border-b border-slate-100 p-5">
+                        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 p-5">
                             <div>
-                                <h2 className="text-sm font-bold text-slate-900">
+                                <h2 className="text-sm font-bold text-slate-900 dark:text-white">
                                     Recent invoices
                                 </h2>
 
@@ -460,7 +460,7 @@ export default function ClientDashboard() {
 
                             <Link
                                 to="/client/invoices"
-                                className="inline-flex items-center gap-1 text-xs font-bold text-slate-700 hover:text-slate-950"
+                                className="inline-flex items-center gap-1 text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline"
                             >
                                 View all
                                 <ArrowRight size={14} />
@@ -473,14 +473,14 @@ export default function ClientDashboard() {
                                 text="No invoices available."
                             />
                         ) : (
-                            <div className="divide-y divide-slate-100">
+                            <div className="divide-y divide-slate-100 dark:divide-slate-800">
                                 {recentInvoices.map((invoice) => (
                                     <div
                                         key={invoice.id}
                                         className="flex items-center justify-between gap-4 p-5"
                                     >
                                         <div className="min-w-0">
-                                            <p className="truncate text-xs font-bold text-slate-900">
+                                            <p className="truncate text-xs font-bold text-slate-900 dark:text-white">
                                                 {invoice.invoice_number ||
                                                     `Invoice #${invoice.id}`}
                                             </p>
@@ -494,7 +494,7 @@ export default function ClientDashboard() {
                                         </div>
 
                                         <div className="text-right">
-                                            <p className="text-xs font-bold text-slate-900">
+                                            <p className="text-xs font-bold text-slate-900 dark:text-white">
                                                 {formatMoney(invoice.total)}
                                             </p>
 
@@ -522,10 +522,10 @@ export default function ClientDashboard() {
             FINANCIAL SUMMARY
         ====================================================== */}
 
-                <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+                <div className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm sm:p-6">
 
                     <div className="mb-5">
-                        <h2 className="text-sm font-bold text-slate-900">
+                        <h2 className="text-sm font-bold text-slate-900 dark:text-white">
                             Financial overview
                         </h2>
 
@@ -583,23 +583,23 @@ function StatCard({
     subtitle,
 }) {
     return (
-        <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm">
             <div className="flex items-start justify-between gap-4">
                 <div>
-                    <p className="text-xs font-semibold text-slate-400">
+                    <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
                         {title}
                     </p>
 
-                    <p className="mt-2 text-xl font-bold text-slate-900">
+                    <p className="mt-2 text-xl font-bold text-slate-900 dark:text-white">
                         {value}
                     </p>
 
-                    <p className="mt-1 text-[11px] text-slate-400">
+                    <p className="mt-1 text-[11px] text-slate-400 dark:text-slate-500">
                         {subtitle}
                     </p>
                 </div>
 
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-700">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200">
                     <Icon size={18} />
                 </div>
             </div>
@@ -616,12 +616,12 @@ function SummaryItem({
     value,
 }) {
     return (
-        <div className="rounded-2xl bg-slate-50 p-5">
+        <div className="rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 p-5">
             <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
                 {label}
             </p>
 
-            <p className="mt-2 text-lg font-bold text-slate-900">
+            <p className="mt-2 text-lg font-bold text-slate-900 dark:text-white">
                 {value}
             </p>
         </div>
@@ -640,10 +640,10 @@ function EmptyState({
         <div className="flex min-h-48 flex-col items-center justify-center p-6 text-center">
             <Icon
                 size={32}
-                className="text-slate-300"
+                className="text-slate-300 dark:text-slate-600"
             />
 
-            <p className="mt-3 text-xs font-semibold text-slate-500">
+            <p className="mt-3 text-xs font-semibold text-slate-500 dark:text-slate-400">
                 {text}
             </p>
         </div>

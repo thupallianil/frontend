@@ -24,10 +24,30 @@ const isAuthenticated = () => {
 
 const getRole = () => {
   const user = getStoredUser();
-  if (user?.is_staff || user?.is_superuser || user?.role === "admin") {
+  if (user?.is_superuser || user?.role === "super_admin") {
+    return "super_admin";
+  }
+  if (user?.is_staff || user?.role === "admin") {
     return "admin";
   }
+  if (user?.role === "vendor") {
+    return "vendor";
+  }
   return "client";
+};
+
+const getDashboardPath = (user) => {
+  const currentUser = user || getStoredUser();
+  if (currentUser?.is_superuser || currentUser?.role === "super_admin") {
+    return "/super-admin/dashboard";
+  }
+  if (currentUser?.is_staff || currentUser?.role === "admin") {
+    return "/admin/dashboard";
+  }
+  if (currentUser?.role === "vendor") {
+    return "/vendor/dashboard";
+  }
+  return "/client/dashboard";
 };
 
 export const authService = {
@@ -42,6 +62,7 @@ export const authService = {
   getStoredUser,
   isAuthenticated,
   getRole,
+  getDashboardPath,
 };
 
 export default authService;

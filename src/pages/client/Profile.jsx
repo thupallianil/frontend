@@ -22,7 +22,7 @@ export default function ClientProfile() {
 
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [modalOpen, setModalOpen] = useState(true);
+  const [modalOpen, setModalOpen] = useState(false);
   const [defaultTab, setDefaultTab] = useState("business");
 
   useEffect(() => {

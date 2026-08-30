@@ -14,8 +14,10 @@ import {
   Lock,
   Mail,
   Moon,
+  Package,
   RefreshCw,
   RotateCcw,
+  Shield,
   ShieldCheck,
   Sun,
   User,
@@ -26,6 +28,7 @@ import toast from "react-hot-toast";
 import { requestSignupOtp, verifySignupOtp, resendSignupOtp } from "../../api/auth";
 import { useAuth } from "../../context/AuthContext";
 import { useApp } from "../../context/AppContext";
+import { authService } from "../../services/authService";
 import GoogleAuthButton from "../../components/auth/GoogleAuthButton";
 
 
@@ -37,7 +40,7 @@ export default function Signup() {
   // Workflow Step: "form" or "verify_otp"
   const [step, setStep] = useState("form");
 
-  // Role: "client" or "admin"
+  // Role: "client", "vendor", "admin", "super_admin"
   const [role, setRole] = useState("client");
 
   const [form, setForm] = useState({
@@ -236,12 +239,8 @@ export default function Signup() {
 
       toast.success("Email verified! Account created successfully.");
 
-      const userIsAdmin = user?.is_staff === true || user?.is_superuser === true || user?.role === "admin";
-      if (userIsAdmin) {
-        navigate("/admin/dashboard", { replace: true });
-      } else {
-        navigate("/client/dashboard", { replace: true });
-      }
+      const targetPath = authService.getDashboardPath(user);
+      navigate(targetPath, { replace: true });
     } catch (error) {
       console.error("Verify OTP error:", error);
       const data = error?.response?.data;
@@ -455,19 +454,35 @@ export default function Signup() {
 
                   {/* Role Switcher */}
                   {step === "form" && (
-                    <div className="flex items-center gap-1 rounded-xl bg-slate-100 p-1 dark:bg-slate-800">
+                    <div className="flex flex-wrap items-center gap-1 rounded-xl bg-slate-100 p-1 dark:bg-slate-800">
                       {/* Client */}
                       <button
                         type="button"
                         onClick={() => setRole("client")}
                         disabled={loading}
-                        className={`flex items-center gap-1.5 rounded-lg px-3 py-1 text-xs font-semibold transition ${role === "client"
+                        className={`flex items-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-semibold transition ${
+                          role === "client"
                             ? "bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white"
                             : "text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
-                          }`}
+                        }`}
                       >
-                        <User size={13} />
+                        <User size={12} />
                         <span>Client</span>
+                      </button>
+
+                      {/* Vendor */}
+                      <button
+                        type="button"
+                        onClick={() => setRole("vendor")}
+                        disabled={loading}
+                        className={`flex items-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-semibold transition ${
+                          role === "vendor"
+                            ? "bg-white text-emerald-700 shadow-sm dark:bg-slate-700 dark:text-emerald-400"
+                            : "text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+                        }`}
+                      >
+                        <Package size={12} />
+                        <span>Vendor</span>
                       </button>
 
                       {/* Admin */}
@@ -475,13 +490,29 @@ export default function Signup() {
                         type="button"
                         onClick={() => setRole("admin")}
                         disabled={loading}
-                        className={`flex items-center gap-1.5 rounded-lg px-3 py-1 text-xs font-semibold transition ${role === "admin"
-                            ? "bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white"
+                        className={`flex items-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-semibold transition ${
+                          role === "admin"
+                            ? "bg-white text-indigo-700 shadow-sm dark:bg-slate-700 dark:text-indigo-400"
                             : "text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
-                          }`}
+                        }`}
                       >
-                        <Building2 size={13} />
+                        <Building2 size={12} />
                         <span>Admin</span>
+                      </button>
+
+                      {/* Super Admin */}
+                      <button
+                        type="button"
+                        onClick={() => setRole("super_admin")}
+                        disabled={loading}
+                        className={`flex items-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-semibold transition ${
+                          role === "super_admin"
+                            ? "bg-white text-purple-700 shadow-sm dark:bg-slate-700 dark:text-purple-400"
+                            : "text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+                        }`}
+                      >
+                        <Shield size={12} />
+                        <span>Super Admin</span>
                       </button>
                     </div>
                   )}

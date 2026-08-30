@@ -43,7 +43,7 @@ export default function ProfileModal({
   onSuccess,
   defaultTab = "business",
 }) {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const { settings, updateSettings } = useSettings();
 
   const [activeTab, setActiveTab] = useState(defaultTab); // "business" | "account"
@@ -67,6 +67,7 @@ export default function ProfileModal({
   // Account Form
   const [accountName, setAccountName] = useState("");
   const [accountEmail, setAccountEmail] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState("");
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -99,6 +100,7 @@ export default function ProfileModal({
 
       setAccountName(user?.name || user?.username || "");
       setAccountEmail(user?.email || "");
+      setAvatarUrl(user?.avatar || "");
       setOldPassword("");
       setNewPassword("");
       setConfirmPassword("");
@@ -120,6 +122,7 @@ export default function ProfileModal({
       }
       setAccountName(user?.name || user?.username || "");
       setAccountEmail(user?.email || "");
+      setAvatarUrl(user?.avatar || "");
     } finally {
       setLoading(false);
     }
@@ -135,6 +138,21 @@ export default function ProfileModal({
       const reader = new FileReader();
       reader.onloadend = () => {
         setLogoUrl(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleAvatarUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        toast.error("Avatar image size must be less than 2MB");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAvatarUrl(reader.result);
       };
       reader.readAsDataURL(file);
     }
@@ -165,6 +183,10 @@ export default function ProfileModal({
           country: country.trim(),
         };
 
+        if (logoUrl && logoUrl.startsWith("data:image")) {
+          payload.logo = logoUrl;
+        }
+
         // 1. Update Profile API
         await profileService.update(payload);
 
@@ -187,6 +209,11 @@ export default function ProfileModal({
             logo: logoUrl,
           });
         } catch (_) {}
+
+        updateUser({
+          name: businessName.trim(),
+          company_name: businessName.trim(),
+        });
 
         toast.success("Business profile updated successfully");
         onSuccess?.(payload);
@@ -211,11 +238,29 @@ export default function ProfileModal({
       try {
         setSaving(true);
 
-        // Update User info (name & email)
-        await api.put("/auth/me/", {
+        // Update User info (name, email, avatar)
+        const updatePayload = {
           name: accountName.trim(),
+          first_name: accountName.trim(),
           email: accountEmail.trim(),
-        });
+        };
+        if (avatarUrl) {
+          updatePayload.avatar = avatarUrl;
+        }
+
+        const res = await api.put("/auth/me/", updatePayload);
+        const updatedUser = res.data?.data?.user;
+
+        if (updatedUser) {
+          updateUser(updatedUser);
+        } else {
+          updateUser({
+            name: accountName.trim(),
+            first_name: accountName.trim(),
+            email: accountEmail.trim(),
+            avatar: avatarUrl,
+          });
+        }
 
         // Change Password if provided
         if (newPassword) {
@@ -241,10 +286,9 @@ export default function ProfileModal({
             new_password_confirm: confirmPassword || newPassword,
           });
           toast.success("Password changed successfully");
-
         }
 
-        toast.success("Account details updated successfully");
+        toast.success("Account profile & photo updated successfully");
         onSuccess?.();
         onClose?.();
       } catch (err) {
@@ -578,23 +622,65 @@ export default function ProfileModal({
                   </>
                 ) : (
                   <>
-                    {/* User Info Overview */}
-                    <div className="rounded-2xl border border-slate-200/80 p-4 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 flex items-center gap-4">
-                      <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-indigo-600 text-lg font-bold text-white shadow-sm">
-                        {accountName?.charAt(0)?.toUpperCase() || "U"}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                          <p className="font-bold text-slate-900 dark:text-slate-100 truncate text-base">
-                            {accountName || "User"}
-                          </p>
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300">
-                            {user?.role || "ADMIN"}
-                          </span>
+                    {/* User Info Overview & Avatar Upload */}
+                    <div className="rounded-2xl border border-slate-200/80 p-4 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                      <div className="flex items-center gap-4 min-w-0">
+                        <div className="relative group">
+                          <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-tr from-indigo-600 to-purple-600 text-xl font-bold text-white shadow-md overflow-hidden ring-2 ring-indigo-500/20">
+                            {avatarUrl ? (
+                              <img src={avatarUrl} alt="Avatar" className="h-full w-full object-cover" />
+                            ) : (
+                              <span>{accountName?.charAt(0)?.toUpperCase() || "U"}</span>
+                            )}
+                          </div>
+                          <label
+                            htmlFor="user-avatar-file-input"
+                            className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-indigo-600 text-white shadow-md hover:bg-indigo-700 transition cursor-pointer"
+                            title="Change Profile Photo"
+                          >
+                            <Upload size={12} />
+                          </label>
+                          <input
+                            id="user-avatar-file-input"
+                            type="file"
+                            accept="image/*"
+                            onChange={handleAvatarUpload}
+                            className="hidden"
+                          />
                         </div>
-                        <p className="text-xs text-slate-400 truncate mt-0.5">
-                          {accountEmail || user?.email}
-                        </p>
+
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <p className="font-bold text-slate-900 dark:text-slate-100 truncate text-base">
+                              {accountName || "User"}
+                            </p>
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300">
+                              {user?.role || "ADMIN"}
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-400 truncate mt-0.5">
+                            {accountEmail || user?.email}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 self-stretch sm:self-auto">
+                        <label
+                          htmlFor="user-avatar-file-input"
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/80 transition cursor-pointer"
+                        >
+                          <Upload size={13} />
+                          <span>Upload Photo</span>
+                        </label>
+                        {avatarUrl && (
+                          <button
+                            type="button"
+                            onClick={() => setAvatarUrl("")}
+                            className="px-2.5 py-1.5 rounded-xl text-xs font-semibold text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition cursor-pointer"
+                          >
+                            Remove
+                          </button>
+                        )}
                       </div>
                     </div>
 

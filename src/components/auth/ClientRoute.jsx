@@ -30,9 +30,10 @@ export default function ClientRoute() {
   }
 
   if (!isClient) {
+    const target = authService.getDashboardPath(user);
     return (
       <Navigate
-        to="/admin/dashboard"
+        to={target}
         replace
       />
     );
